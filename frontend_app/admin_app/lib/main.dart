@@ -64,11 +64,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkAuthStatus() async {
     try {
+      // Vérifie si l'utilisateur est connecté (token valide + rôle admin)
       final isLoggedIn = await _authService.isLoggedIn();
+      final isTokenValid = await _authService.validateToken();
+      
+      final isAuthenticated = isLoggedIn && isTokenValid;
       
       setState(() {
-        _isLoggedIn = isLoggedIn;
-        _isAdmin = isLoggedIn; // Nous vérifions déjà le rôle Admin dans isLoggedIn()
+        _isLoggedIn = isAuthenticated;
+        _isAdmin = isAuthenticated; // Nous vérifions déjà le rôle Admin dans isLoggedIn()
         _isLoading = false;
       });
       
@@ -76,6 +80,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // Afficher des informations utiles pour le débogage
         final user = await _authService.getCurrentUser();
         print('Utilisateur connecté: ${user?['nom']} (${user?['role']})');
+        print('Token valide: $isTokenValid');
       }
     } catch (e) {
       print('Erreur lors de la vérification de l\'authentification: $e');

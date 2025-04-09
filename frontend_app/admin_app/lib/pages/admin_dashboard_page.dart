@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'dart:math';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -8,15 +9,74 @@ class AdminDashboardPage extends StatefulWidget {
   State<AdminDashboardPage> createState() => _AdminDashboardPageState();
 }
 
-class _AdminDashboardPageState extends State<AdminDashboardPage> {
+class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   Map<String, dynamic>? _user;
   bool _isLoading = true;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  final List<CardItem> _cardItems = [
+    CardItem(
+      title: 'Produits',
+      icon: Icons.shopping_bag_outlined,
+      color: const Color(0xFF4A6FFF),
+      secondaryColor: const Color(0xFF84A9FF),
+      route: '/products',
+      count: '124',
+      description: 'Gérez votre catalogue',
+    ),
+    CardItem(
+      title: 'Commandes',
+      icon: Icons.shopping_cart_outlined,
+      color: const Color(0xFF36B37E),
+      secondaryColor: const Color(0xFF79F2C0),
+      route: '/orders',
+      count: '26',
+      description: 'Suivi des commandes',
+    ),
+    CardItem(
+      title: 'Utilisateurs',
+      icon: Icons.people_outline,
+      color: const Color(0xFFFF5630),
+      secondaryColor: const Color(0xFFFFAB99),
+      route: '/users',
+      count: '432',
+      description: 'Gestion des comptes',
+    ),
+    CardItem(
+      title: 'Statistiques',
+      icon: Icons.insert_chart_outlined,
+      color: const Color(0xFF6554C0),
+      secondaryColor: const Color(0xFFB8ACF6),
+      route: '/stats',
+      count: '',
+      description: 'Analyses des ventes',
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
     _checkAuth();
+    _testAuthentication();
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    );
+    
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkAuth() async {
@@ -33,6 +93,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _user = user;
       _isLoading = false;
     });
+  }
+
+  Future<void> _testAuthentication() async {
+    try {
+      final isAuthenticated = await _authService.testAuthenticatedRequest();
+      if (!isAuthenticated && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Votre session pourrait être expirée. Reconnectez-vous si nécessaire.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Erreur lors du test d\'authentification: $e');
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -56,92 +133,99 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Chargement du tableau de bord...',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
+    final size = MediaQuery.of(context).size;
+    final theme = Theme.of(context);
+    final isSmallScreen = size.width < 600;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tableau de bord Admin'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _handleLogout,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bienvenue, ${_user?['nom'] ?? 'Admin'}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Email: ${_user?['email'] ?? ''}',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+            _buildHeader(theme, isSmallScreen),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    )
                   ],
                 ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: 24,
+                    left: isSmallScreen ? 12 : 16,
+                    right: isSmallScreen ? 12 : 16,
+                    bottom: 16,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tableau de bord',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onBackground,
+                                fontSize: isSmallScreen ? 20 : 24,
+                              ),
+                            ),
+                            _buildDateChip(theme, isSmallScreen),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 24),
+                      _buildSummaryCards(theme, isSmallScreen),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'Gestion',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onBackground,
+                            fontSize: isSmallScreen ? 18 : 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: _buildDashboardGrid(isSmallScreen),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _buildDashboardCard(
-                  context,
-                  'Produits',
-                  Icons.shopping_bag,
-                  Colors.blue,
-                  () {
-                    // TODO: Naviguer vers la gestion des produits
-                  },
-                ),
-                _buildDashboardCard(
-                  context,
-                  'Commandes',
-                  Icons.shopping_cart,
-                  Colors.green,
-                  () {
-                    // TODO: Naviguer vers la gestion des commandes
-                  },
-                ),
-                _buildDashboardCard(
-                  context,
-                  'Utilisateurs',
-                  Icons.people,
-                  Colors.orange,
-                  () {
-                    // TODO: Naviguer vers la gestion des utilisateurs
-                  },
-                ),
-                _buildDashboardCard(
-                  context,
-                  'Statistiques',
-                  Icons.bar_chart,
-                  Colors.purple,
-                  () {
-                    // TODO: Naviguer vers les statistiques
-                  },
-                ),
-              ],
             ),
           ],
         ),
@@ -149,39 +233,276 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildDashboardCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildHeader(ThemeData theme, bool isSmallScreen) {
+    return Container(
+      padding: EdgeInsets.only(
+        left: isSmallScreen ? 16 : 24,
+        right: isSmallScreen ? 16 : 24,
+        top: 16,
+        bottom: isSmallScreen ? 20 : 24,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.8),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: isSmallScreen ? 20 : 24,
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      _getInitials(_user?['nom'] ?? 'Admin'),
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: isSmallScreen ? 14 : 18,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: isSmallScreen ? 12 : 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bienvenue,',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: isSmallScreen ? 13 : 14,
+                        ),
+                      ),
+                      Text(
+                        _user?['nom'] ?? 'Admin',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: isSmallScreen ? 16 : 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: _handleLogout,
+                icon: const Icon(Icons.logout_rounded),
+                color: Colors.white,
+                tooltip: 'Déconnexion',
+                iconSize: isSmallScreen ? 22 : 24,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateChip(ThemeData theme, bool isSmallScreen) {
+    final now = DateTime.now();
+    final months = [
+      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'
+    ];
+    
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 12 : 16,
+        vertical: isSmallScreen ? 6 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_today,
+            size: isSmallScreen ? 14 : 16,
+            color: theme.colorScheme.primary,
+          ),
+          SizedBox(width: isSmallScreen ? 6 : 8),
+          Text(
+            '${now.day} ${months[now.month - 1]} ${now.year}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface,
+              fontSize: isSmallScreen ? 12 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCards(ThemeData theme, bool isSmallScreen) {
+    return SizedBox(
+      height: isSmallScreen ? 100 : 110,
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildSummaryCard(
+                icon: Icons.payment_outlined,
+                title: 'Ventes du jour',
+                value: '€ 1,256.50',
+                change: '+12.5%',
+                isPositive: true,
+                color: theme.colorScheme.primary,
+                animationValue: _animation.value,
+                delay: 0,
+                isSmallScreen: isSmallScreen,
+              ),
+              _buildSummaryCard(
+                icon: Icons.shopping_bag_outlined,
+                title: 'Commandes',
+                value: '26',
+                change: '+8.2%',
+                isPositive: true,
+                color: const Color(0xFF36B37E),
+                animationValue: _animation.value,
+                delay: 0.1,
+                isSmallScreen: isSmallScreen,
+              ),
+              _buildSummaryCard(
+                icon: Icons.people_outline,
+                title: 'Nouveaux clients',
+                value: '12',
+                change: '-2.4%',
+                isPositive: false,
+                color: const Color(0xFFFF5630),
+                animationValue: _animation.value,
+                delay: 0.2,
+                isSmallScreen: isSmallScreen,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required String change,
+    required bool isPositive,
+    required Color color,
+    required double animationValue,
+    required double delay,
+    required bool isSmallScreen,
+  }) {
+    final delayedAnimation = min(max(animationValue - delay, 0) / (1 - delay), 1.0);
+    final offset = 1 - Curves.easeOutCubic.transform(delayedAnimation);
+    
+    return Transform.translate(
+      offset: Offset(50 * offset, 0),
+      child: Opacity(
+        opacity: delayedAnimation,
+        child: Container(
+          margin: EdgeInsets.only(right: isSmallScreen ? 12 : 16),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+          width: isSmallScreen ? 170 : 200,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 48,
-                color: color,
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: isSmallScreen ? 16 : 20,
+                      color: color,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 6 : 8,
+                      vertical: isSmallScreen ? 3 : 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isPositive
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          size: isSmallScreen ? 10 : 12,
+                          color: isPositive ? Colors.green : Colors.red,
+                        ),
+                        SizedBox(width: isSmallScreen ? 1 : 2),
+                        Text(
+                          change,
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 9 : 10,
+                            fontWeight: FontWeight.bold,
+                            color: isPositive ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: isSmallScreen ? 8 : 12),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 18 : 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: isSmallScreen ? 2 : 4),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 11 : 12,
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),
@@ -189,4 +510,175 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
     );
   }
+
+  Widget _buildDashboardGrid(bool isSmallScreen) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return GridView.builder(
+          padding: EdgeInsets.zero,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: isSmallScreen ? 0.85 : 1,
+            crossAxisSpacing: isSmallScreen ? 12 : 16,
+            mainAxisSpacing: isSmallScreen ? 12 : 16,
+          ),
+          itemCount: _cardItems.length,
+          itemBuilder: (context, index) {
+            final delay = 0.2 + (index * 0.1);
+            final delayedAnimation = min(max(_animation.value - delay, 0) / (1 - delay), 1.0);
+            
+            return _buildAnimatedDashboardCard(
+              _cardItems[index],
+              delayedAnimation,
+              index,
+              isSmallScreen,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedDashboardCard(CardItem item, double delayedAnimation, int index, bool isSmallScreen) {
+    final scale = 0.5 + (0.5 * Curves.elasticOut.transform(delayedAnimation));
+    final opacity = Curves.easeOut.transform(delayedAnimation);
+    
+    return Transform.scale(
+      scale: scale,
+      child: Opacity(
+        opacity: opacity,
+        child: _buildDashboardCard(item, index, isSmallScreen),
+      ),
+    );
+  }
+
+  Widget _buildDashboardCard(CardItem item, int index, bool isSmallScreen) {
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              item.color,
+              item.secondaryColor,
+            ],
+            stops: const [0.2, 1.0],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: item.color.withOpacity(0.3),
+              blurRadius: isSmallScreen ? 8 : 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+            splashColor: Colors.white.withOpacity(0.2),
+            highlightColor: Colors.white.withOpacity(0.1),
+            onTap: () {
+              // TODO: Naviguer vers la bonne route
+              print('Navigation vers ${item.route}');
+            },
+            child: Padding(
+              padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 14),
+                    ),
+                    child: Icon(
+                      item.icon,
+                      size: isSmallScreen ? 24 : 28,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (item.count.isNotEmpty) ...[
+                        Text(
+                          item.count,
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 22 : 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: isSmallScreen ? 2 : 4),
+                      ],
+                      Text(
+                        item.title,
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 1 : 2),
+                      Text(
+                        item.description,
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 11 : 12,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    final nameParts = name.split(' ');
+    if (nameParts.length >= 2) {
+      return nameParts[0][0] + nameParts[1][0];
+    } else if (name.length >= 2) {
+      return name.substring(0, 2).toUpperCase();
+    } else {
+      return name.toUpperCase();
+    }
+  }
+}
+
+class CardItem {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final Color secondaryColor;
+  final String route;
+  final String count;
+  final String description;
+
+  CardItem({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.secondaryColor,
+    required this.route,
+    required this.count,
+    required this.description,
+  });
 } 
