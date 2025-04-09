@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 
 class CommandesPage extends StatefulWidget {
   const CommandesPage({super.key});
@@ -9,7 +8,6 @@ class CommandesPage extends StatefulWidget {
 }
 
 class _CommandesPageState extends State<CommandesPage> with SingleTickerProviderStateMixin {
-  final _authService = AuthService();
   bool _isLoading = false;
   late TabController _tabController;
   final List<String> _filterOptions = ['Toutes', 'En cours', 'Livrées', 'Annulées'];

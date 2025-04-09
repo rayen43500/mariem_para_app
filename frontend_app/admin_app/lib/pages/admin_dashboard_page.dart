@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import '../services/auth_service.dart';
 import 'dart:math';
 
@@ -11,6 +12,7 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
+  final _logger = Logger();
   Map<String, dynamic>? _user;
   bool _isLoading = true;
   late AnimationController _animationController;
@@ -127,7 +129,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       await _authService.testAuthenticatedRequest();
       // If we get here, the test succeeded, no need to show any message
     } catch (e) {
-      print('Erreur lors du test d\'authentification: $e');
+      _logger.e('Erreur lors du test d\'authentification: $e');
       // Only show the message when there's an actual error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +227,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
                               'Tableau de bord',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onBackground,
+                                color: theme.colorScheme.onSurface,
                                 fontSize: isSmallScreen ? 20 : 24,
                               ),
                             ),
@@ -242,7 +244,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
                           'Gestion',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onBackground,
+                            color: theme.colorScheme.onSurface,
                             fontSize: isSmallScreen ? 18 : 20,
                           ),
                         ),
@@ -519,7 +521,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
                 title,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 11 : 12,
-                  color: Colors.grey.shade600,
+                  color: Colors.grey.withOpacity(0.6),
                 ),
               ),
             ],
@@ -606,8 +608,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
             splashColor: Colors.white.withOpacity(0.2),
             highlightColor: Colors.white.withOpacity(0.1),
             onTap: () {
-              // TODO: Naviguer vers la bonne route
-              print('Navigation vers ${item.route}');
+              _logger.i('Navigation vers ${item.route}');
               Navigator.pushNamed(context, item.route);
             },
             child: Padding(

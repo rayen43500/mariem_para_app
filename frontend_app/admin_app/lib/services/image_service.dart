@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:logger/logger.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 
@@ -10,6 +12,7 @@ class ImageService {
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
   final String baseUrl = ApiConfig.baseUrl;
+  final _logger = Logger();
 
   // Sélectionner une image depuis la galerie
   Future<File?> pickImageFromGallery() async {
@@ -24,7 +27,7 @@ class ImageService {
       }
       return null;
     } catch (e) {
-      print('Erreur lors de la sélection de l\'image: $e');
+      _logger.e('Erreur lors de la sélection de l\'image: $e');
       rethrow;
     }
   }
@@ -42,7 +45,7 @@ class ImageService {
       }
       return null;
     } catch (e) {
-      print('Erreur lors de la prise de photo: $e');
+      _logger.e('Erreur lors de la prise de photo: $e');
       rethrow;
     }
   }
@@ -92,7 +95,7 @@ class ImageService {
         throw Exception('Échec du téléchargement de l\'image: $responseBody');
       }
     } catch (e) {
-      print('Erreur lors du téléchargement de l\'image: $e');
+      _logger.e('Erreur lors du téléchargement de l\'image: $e');
       rethrow;
     }
   }
@@ -121,20 +124,11 @@ class ImageService {
     try {
       return Map<String, dynamic>.from(
         (responseBody.startsWith('{')) 
-            ? HttpJsonDecoder().convert(responseBody) 
+            ? jsonDecode(responseBody) 
             : {'imageUrl': responseBody.trim()}
       );
     } catch (e) {
       return {'imageUrl': responseBody.trim()};
     }
   }
-}
-
-class HttpJsonDecoder {
-  dynamic convert(String response) {
-    return response.isEmpty ? {} : json.decode(response);
-  }
-}
-
-// Import json uniquement ici pour éviter les conflits
-import 'dart:convert' as json; 
+} 

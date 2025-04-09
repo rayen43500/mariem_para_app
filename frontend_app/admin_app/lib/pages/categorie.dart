@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 
 class CategoriePage extends StatefulWidget {
   const CategoriePage({super.key});
@@ -9,8 +8,7 @@ class CategoriePage extends StatefulWidget {
 }
 
 class _CategoriePageState extends State<CategoriePage> {
-  final _authService = AuthService();
-  bool _isLoading = false;
+  final _isLoading = false;
   String _searchQuery = '';
 
   final List<Map<String, dynamic>> _categories = [

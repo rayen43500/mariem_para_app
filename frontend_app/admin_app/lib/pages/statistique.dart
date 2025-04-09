@@ -341,7 +341,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
   Widget _buildSalesChart(ThemeData theme) {
     final maxSale = _statsData['ventesMensuelles']
         .map<double>((item) => item['ventes'] as double)
-        .reduce((a, b) => max(a, b));
+        .reduce((double a, double b) => max<double>(a, b));
 
     return Card(
       elevation: 4,
@@ -664,7 +664,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
   double _calculateYearlyTotal() {
     return _statsData['ventesMensuelles']
         .map<double>((item) => item['ventes'] as double)
-        .reduce((a, b) => a + b);
+        .fold<double>(0.0, (previous, current) => previous + current);
   }
 
   Color _getCategoryColor(String category, ThemeData theme) {

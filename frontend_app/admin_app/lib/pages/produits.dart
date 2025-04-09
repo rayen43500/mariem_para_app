@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:logger/logger.dart';
 import '../services/auth_service.dart';
 import '../services/product_service.dart';
 import '../services/image_service.dart';
@@ -17,6 +18,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
   final _authService = AuthService();
   final _productService = ProductService();
   final _imageService = ImageService();
+  final _logger = Logger();
   
   bool _isLoading = true;
   List<Product> _produits = [];
@@ -63,7 +65,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erreur lors du chargement des produits: $e');
+      _logger.e('Erreur lors du chargement des produits: $e');
       setState(() {
         _isLoading = false;
       });

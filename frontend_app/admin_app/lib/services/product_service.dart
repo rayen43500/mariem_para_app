@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
 
 class ProductService {
   final AuthService _authService = AuthService();
   final String baseUrl = ApiConfig.baseUrl;
+  final _logger = Logger();
 
   // Récupérer tous les produits
   Future<Map<String, dynamic>> getProducts({
@@ -54,7 +56,7 @@ class ProductService {
         throw Exception('Échec de récupération des produits: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans getProducts: $e');
+      _logger.e('Erreur dans getProducts: $e');
       rethrow;
     }
   }
@@ -82,7 +84,7 @@ class ProductService {
         throw Exception('Échec de récupération du produit: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans getProductById: $e');
+      _logger.e('Erreur dans getProductById: $e');
       rethrow;
     }
   }
@@ -111,7 +113,7 @@ class ProductService {
         throw Exception('Échec de création du produit: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans createProduct: $e');
+      _logger.e('Erreur dans createProduct: $e');
       rethrow;
     }
   }
@@ -140,7 +142,7 @@ class ProductService {
         throw Exception('Échec de mise à jour du produit: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans updateProduct: $e');
+      _logger.e('Erreur dans updateProduct: $e');
       rethrow;
     }
   }
@@ -168,7 +170,7 @@ class ProductService {
         throw Exception('Échec de recherche des produits: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans searchProducts: $e');
+      _logger.e('Erreur dans searchProducts: $e');
       rethrow;
     }
   }
@@ -201,7 +203,7 @@ class ProductService {
         throw Exception('Échec de réapprovisionnement du produit: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans restockProduct: $e');
+      _logger.e('Erreur dans restockProduct: $e');
       rethrow;
     }
   }
@@ -229,7 +231,7 @@ class ProductService {
         throw Exception('Échec de récupération des produits en stock faible: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans getLowStockProducts: $e');
+      _logger.e('Erreur dans getLowStockProducts: $e');
       rethrow;
     }
   }
@@ -261,7 +263,7 @@ class ProductService {
         throw Exception('Échec d\'ajustement du stock: ${response.body}');
       }
     } catch (e) {
-      print('Erreur dans adjustStock: $e');
+      _logger.e('Erreur dans adjustStock: $e');
       rethrow;
     }
   }
