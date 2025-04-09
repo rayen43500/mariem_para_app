@@ -35,18 +35,27 @@ class _LoginPageState extends State<LoginPage> {
         );
         
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
+          final isLoggedIn = await _authService.isLoggedIn();
+          if (isLoggedIn) {
+            Navigator.pushReplacementNamed(context, '/admin-dashboard');
+          } else {
+            throw Exception('Erreur de connexion. Veuillez réessayer.');
+          }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString()),
+              content: Text(
+                e.toString().replaceAll('Exception: ', ''),
+                style: const TextStyle(color: Colors.white),
+              ),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.red.shade700,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -272,8 +281,20 @@ class _LoginPageState extends State<LoginPage> {
                               if (value == null || value.isEmpty) {
                                 return 'Veuillez entrer votre mot de passe';
                               }
-                              if (value.length < 6) {
-                                return 'Le mot de passe doit contenir au moins 6 caractères';
+                              if (value.length < 8) {
+                                return 'Le mot de passe doit contenir au moins 8 caractères';
+                              }
+                              if (!value.contains(RegExp(r'[A-Z]'))) {
+                                return 'Le mot de passe doit contenir au moins une majuscule';
+                              }
+                              if (!value.contains(RegExp(r'[a-z]'))) {
+                                return 'Le mot de passe doit contenir au moins une minuscule';
+                              }
+                              if (!value.contains(RegExp(r'[0-9]'))) {
+                                return 'Le mot de passe doit contenir au moins un chiffre';
+                              }
+                              if (!value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+                                return 'Le mot de passe doit contenir au moins un caractère spécial';
                               }
                               return null;
                             },

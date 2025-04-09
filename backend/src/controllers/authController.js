@@ -93,33 +93,41 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Vérifier le mot de passe
-    const isMatch = await user.comparePassword(motDePasse);
-    if (!isMatch) {
-      await user.incrementLoginAttempts();
-      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
-    }
+    try {
+      // Vérifier le mot de passe
+      const isMatch = await user.comparePassword(motDePasse);
+      if (!isMatch) {
+        await user.incrementLoginAttempts();
+        return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
+      }
 
-    // Réinitialiser les tentatives de connexion
-    await user.resetLoginAttempts();
+      // Réinitialiser les tentatives de connexion
+      await user.resetLoginAttempts();
 
-    // Générer les tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+      // Générer les tokens
+      const token = generateToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
 
-    res.json({
-      token,
-      refreshToken,
-      user: {
+      // Créer la réponse sans le mot de passe
+      const userResponse = {
         id: user._id,
         nom: user.nom,
         email: user.email,
         role: user.role,
         isVerified: user.isVerified
-      }
-    });
+      };
+
+      res.json({
+        token,
+        refreshToken,
+        user: userResponse
+      });
+    } catch (error) {
+      console.error('Erreur lors de la vérification du mot de passe:', error);
+      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
+    }
   } catch (error) {
-    console.error(error);
+    console.error('Erreur de connexion:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
+import 'pages/admin_dashboard_page.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -32,7 +33,12 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const AuthWrapper(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginPage(),
+        '/admin-dashboard': (context) => const AdminDashboardPage(),
+      },
     );
   }
 }
@@ -48,6 +54,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   final _authService = AuthService();
   bool _isLoading = true;
   bool _isLoggedIn = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -56,11 +63,28 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
-    final isLoggedIn = await _authService.isLoggedIn();
-    setState(() {
-      _isLoggedIn = isLoggedIn;
-      _isLoading = false;
-    });
+    try {
+      final isLoggedIn = await _authService.isLoggedIn();
+      
+      setState(() {
+        _isLoggedIn = isLoggedIn;
+        _isAdmin = isLoggedIn; // Nous vérifions déjà le rôle Admin dans isLoggedIn()
+        _isLoading = false;
+      });
+      
+      if (_isLoggedIn && mounted) {
+        // Afficher des informations utiles pour le débogage
+        final user = await _authService.getCurrentUser();
+        print('Utilisateur connecté: ${user?['nom']} (${user?['role']})');
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification de l\'authentification: $e');
+      setState(() {
+        _isLoggedIn = false;
+        _isAdmin = false;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -73,8 +97,42 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    return _isLoggedIn
-        ? const DashboardPage() // Remplacez par votre page de tableau de bord
-        : const LoginPage();
+    if (!_isLoggedIn) {
+      return const LoginPage();
+    }
+    
+    if (!_isAdmin) {
+      // Si l'utilisateur est connecté mais n'est pas admin
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Accès non autorisé',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Vous n\'avez pas les droits administrateur nécessaires.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () async {
+                  await _authService.logout();
+                  if (mounted) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+                child: const Text('Se déconnecter'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const AdminDashboardPage();
   }
 }

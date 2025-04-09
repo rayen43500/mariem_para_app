@@ -77,7 +77,15 @@ userSchema.pre('save', async function(next) {
 
 // Méthode pour comparer les mots de passe
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.motDePasse);
+  try {
+    if (!this.motDePasse) {
+      throw new Error('Mot de passe non trouvé');
+    }
+    return await bcrypt.compare(candidatePassword, this.motDePasse);
+  } catch (error) {
+    console.error('Erreur lors de la comparaison des mots de passe:', error);
+    throw error;
+  }
 };
 
 // Méthode pour générer un token de vérification
@@ -107,14 +115,14 @@ userSchema.methods.incrementLoginAttempts = async function() {
     this.lockUntil = Date.now() + 30 * 60 * 1000; // 30 minutes
   }
   
-  await this.save();
+  await this.save({ validateBeforeSave: false });
 };
 
 // Méthode pour réinitialiser les tentatives de connexion
 userSchema.methods.resetLoginAttempts = async function() {
   this.loginAttempts = 0;
   this.lockUntil = undefined;
-  await this.save();
+  await this.save({ validateBeforeSave: false });
 };
 
 module.exports = mongoose.model('User', userSchema); 
