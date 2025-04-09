@@ -52,6 +52,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       count: '',
       description: 'Analyses des ventes',
     ),
+    CardItem(
+      title: 'Livreurs',
+      icon: Icons.delivery_dining_outlined,
+      color: const Color(0xFF00B8D9),
+      secondaryColor: const Color(0xFF8FDFF6),
+      route: '/delivery',
+      count: '18',
+      description: 'Gestion des livreurs',
+    ),
+    CardItem(
+      title: 'Promotions',
+      icon: Icons.local_offer_outlined,
+      color: const Color(0xFFFF8B00),
+      secondaryColor: const Color(0xFFFFD580),
+      route: '/promotions',
+      count: '9',
+      description: 'Codes promos & offres',
+    ),
+    CardItem(
+      title: 'Catégories',
+      icon: Icons.category_outlined,
+      color: const Color(0xFF7A0BC0),
+      secondaryColor: const Color(0xFFC87DFF),
+      route: '/categories',
+      count: '6',
+      description: 'Gestion des catégories',
+    ),
   ];
 
   @override
@@ -97,18 +124,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
 
   Future<void> _testAuthentication() async {
     try {
-      final isAuthenticated = await _authService.testAuthenticatedRequest();
-      if (!isAuthenticated && mounted) {
+      await _authService.testAuthenticatedRequest();
+      // If we get here, the test succeeded, no need to show any message
+    } catch (e) {
+      print('Erreur lors du test d\'authentification: $e');
+      // Only show the message when there's an actual error
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Votre session pourrait être expirée. Reconnectez-vous si nécessaire.'),
+            content: Text('Votre session est expirée. Veuillez vous reconnecter.'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 5),
           ),
         );
       }
-    } catch (e) {
-      print('Erreur lors du test d\'authentification: $e');
     }
   }
 
@@ -235,68 +264,57 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
 
   Widget _buildHeader(ThemeData theme, bool isSmallScreen) {
     return Container(
-      padding: EdgeInsets.only(
-        left: isSmallScreen ? 16 : 24,
-        right: isSmallScreen ? 16 : 24,
-        top: 16,
-        bottom: isSmallScreen ? 20 : 24,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withOpacity(0.8),
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      color: theme.colorScheme.primary,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: isSmallScreen ? 20 : 24,
-                    backgroundColor: Colors.white,
-                    child: Text(
-                      _getInitials(_user?['nom'] ?? 'Admin'),
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: isSmallScreen ? 14 : 18,
-                      ),
-                    ),
+          InkWell(
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/dashboard');
+            },
+            child: Row(
+              children: [
+                Icon(
+                  Icons.dashboard_rounded,
+                  color: Colors.white,
+                  size: isSmallScreen ? 24 : 28,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Dashboard Admin',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isSmallScreen ? 18 : 22,
                   ),
-                  SizedBox(width: isSmallScreen ? 12 : 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bienvenue,',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: isSmallScreen ? 13 : 14,
-                        ),
-                      ),
-                      Text(
-                        _user?['nom'] ?? 'Admin',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: isSmallScreen ? 20 : 24,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: _user != null
+                    ? Text(
+                        _getInitials(_user!['nom'] ?? 'Admin'),
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: isSmallScreen ? 16 : 20,
+                          fontSize: isSmallScreen ? 14 : 16,
                         ),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
-                ],
               ),
+              const SizedBox(width: 12),
               IconButton(
                 onPressed: _handleLogout,
-                icon: const Icon(Icons.logout_rounded),
+                icon: const Icon(Icons.logout),
                 color: Colors.white,
                 tooltip: 'Déconnexion',
                 iconSize: isSmallScreen ? 22 : 24,
@@ -590,6 +608,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
             onTap: () {
               // TODO: Naviguer vers la bonne route
               print('Navigation vers ${item.route}');
+              Navigator.pushNamed(context, item.route);
             },
             child: Padding(
               padding: EdgeInsets.all(isSmallScreen ? 16 : 20),

@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'services/auth_service.dart';
 import 'pages/login_page.dart';
 import 'pages/admin_dashboard_page.dart';
-import 'services/auth_service.dart';
+import 'pages/produits.dart';
+import 'pages/commandes.dart';
+import 'pages/utilisateurs.dart';
+import 'pages/statistique.dart';
+import 'pages/livreurs.dart';
+import 'pages/promotions.dart';
+import 'pages/categorie.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   runApp(const MyApp());
 }
 
@@ -13,31 +28,31 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Admin Panel',
+      title: 'Admin Dashboard',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          primary: Colors.blue,
-          secondary: Colors.blueAccent,
+          seedColor: const Color(0xFF4A6FFF),
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(fontSize: 16),
-          ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
         ),
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginPage(),
-        '/admin-dashboard': (context) => const AdminDashboardPage(),
+        '/dashboard': (context) => const AdminDashboardPage(),
+        '/products': (context) => const ProduitsPage(),
+        '/orders': (context) => const CommandesPage(),
+        '/users': (context) => const UtilisateursPage(),
+        '/stats': (context) => const StatistiquePage(),
+        '/delivery': (context) => const LivreursPage(),
+        '/promotions': (context) => const PromotionsPage(),
+        '/categories': (context) => const CategoriePage(),
       },
     );
   }
@@ -63,33 +78,36 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
-    try {
-      // Vérifie si l'utilisateur est connecté (token valide + rôle admin)
-      final isLoggedIn = await _authService.isLoggedIn();
-      final isTokenValid = await _authService.validateToken();
-      
-      final isAuthenticated = isLoggedIn && isTokenValid;
-      
+    final isLoggedIn = await _authService.isLoggedIn();
+    
+    if (!isLoggedIn) {
       setState(() {
-        _isLoggedIn = isAuthenticated;
-        _isAdmin = isAuthenticated; // Nous vérifions déjà le rôle Admin dans isLoggedIn()
         _isLoading = false;
-      });
-      
-      if (_isLoggedIn && mounted) {
-        // Afficher des informations utiles pour le débogage
-        final user = await _authService.getCurrentUser();
-        print('Utilisateur connecté: ${user?['nom']} (${user?['role']})');
-        print('Token valide: $isTokenValid');
-      }
-    } catch (e) {
-      print('Erreur lors de la vérification de l\'authentification: $e');
-      setState(() {
         _isLoggedIn = false;
-        _isAdmin = false;
-        _isLoading = false;
       });
+      return;
     }
+
+    // Verifier que le token est toujours valide
+    final isTokenValid = await _authService.validateToken();
+    
+    if (!isTokenValid) {
+      await _authService.logout();
+      setState(() {
+        _isLoading = false;
+        _isLoggedIn = false;
+      });
+      return;
+    }
+
+    final user = await _authService.getCurrentUser();
+    final isAdmin = user?['role'] == 'Admin';
+
+    setState(() {
+      _isLoading = false;
+      _isLoggedIn = true;
+      _isAdmin = isAdmin;
+    });
   }
 
   @override
@@ -105,21 +123,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (!_isLoggedIn) {
       return const LoginPage();
     }
-    
+
     if (!_isAdmin) {
-      // Si l'utilisateur est connecté mais n'est pas admin
       return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Accès non autorisé',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              const Icon(
+                Icons.lock,
+                size: 64,
+                color: Colors.red,
               ),
               const SizedBox(height: 16),
               const Text(
-                'Vous n\'avez pas les droits administrateur nécessaires.',
+                'Accès non autorisé',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Vous n\'avez pas les droits d\'administration nécessaires',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -130,7 +156,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                     Navigator.pushReplacementNamed(context, '/login');
                   }
                 },
-                child: const Text('Se déconnecter'),
+                child: const Text('Déconnexion'),
               ),
             ],
           ),
