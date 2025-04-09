@@ -79,8 +79,13 @@ orderSchema.pre('save', async function(next) {
         }
         
         // Utiliser la méthode updateStock qui gère à la fois la mise à jour du stock
-        // et la vérification du statut isActive
-        await produit.updateStock(item.quantité);
+        // et la traçabilité des mouvements de stock
+        await produit.updateStock(
+          item.quantité,
+          `Commande #${this._id}`,
+          this.userId,
+          `Produit vendu via commande #${this._id}`
+        );
       }
     } catch (error) {
       // Propager l'erreur pour qu'elle soit gérée par le contrôleur

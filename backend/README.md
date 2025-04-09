@@ -166,3 +166,31 @@ Cette application backend fournit une API complète pour une plateforme e-commer
 - API RESTful avec endpoints bien définis
 - Middlewares personnalisés pour l'authentification, l'autorisation et la validation
 - Intégration de services tiers pour les paiements 
+
+## Gestion Avancée des Stocks
+Le système offre une gestion de stock robuste et complète avec les fonctionnalités suivantes :
+
+### Traçabilité des Mouvements
+- Historique complet de tous les mouvements de stock (entrées, sorties, ajustements, réservations)
+- Chaque mouvement stocke la date, la quantité, la référence et l'utilisateur qui l'a effectué
+- Filtrage de l'historique par période
+
+### Alertes de Stock
+- Seuil d'alerte personnalisable par produit
+- Notification automatique en cas de stock faible
+- Notification en cas de rupture de stock
+- Configuration des préférences de notification par produit
+
+### Opérations de Stock
+- Réapprovisionnement avec traçabilité
+- Ajustement de stock (inventaire)
+- Réservation de stock
+- Vérification de stock maximum pour éviter le surstockage
+
+### Endpoints Spécifiques
+- `POST /api/produits/:id/restock` : Réapprovisionner un produit
+- `PUT /api/produits/:id/adjust-stock` : Ajuster le stock (inventaire)
+- `PUT /api/produits/:id/stock-settings` : Configurer les paramètres de stock
+- `GET /api/produits/:id/stock-history` : Consulter l'historique des mouvements
+- `POST /api/produits/:id/reserve` : Réserver du stock
+- `GET /api/produits/inventory/low-stock` : Obtenir la liste des produits en rupture ou stock faible 

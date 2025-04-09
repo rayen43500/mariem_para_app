@@ -35,4 +35,10 @@ router.put('/:id', auth, isAdmin, validateProduct, productController.updateProdu
 router.post('/:id/restock', auth, isAdmin, productController.restockProduct);
 router.get('/inventory/low-stock', auth, isAdmin, productController.getLowStockProducts);
 
+// Nouvelles routes pour la gestion avancée des stocks
+router.put('/:id/adjust-stock', auth, isAdmin, productController.adjustStock);
+router.put('/:id/stock-settings', auth, isAdmin, productController.configureStockSettings);
+router.get('/:id/stock-history', auth, isAdmin, productController.getStockHistory);
+router.post('/:id/reserve', auth, productController.reserveStock);
+
 module.exports = router; 

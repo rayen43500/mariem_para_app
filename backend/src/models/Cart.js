@@ -86,11 +86,29 @@ cartSchema.methods.viderPanier = async function() {
   return this.save();
 };
 
-// Méthode pour appliquer un code promo
-cartSchema.methods.appliquerCodePromo = async function(code, réduction) {
+// Méthode pour appliquer un code promo au panier
+cartSchema.methods.appliquerCodePromo = async function(code, discount) {
+  const Coupon = require('./Coupon');
+  const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+  
+  if (!coupon) {
+    throw new Error('Code promo invalide');
+  }
+  
   this.codePromo = code;
-  this.réduction = réduction;
+  
+  // Déterminer le type de remise et appliquer la réduction
+  if (coupon.type === 'percentage') {
+    this.réduction = discount;
+  } else if (coupon.type === 'fixed') {
+    // Pour une réduction fixe, on calcule le pourcentage équivalent par rapport au total
+    const pourcentage = (discount / this.totalPrix) * 100;
+    this.réduction = pourcentage > 100 ? 100 : pourcentage; // Limiter à 100% maximum
+  }
+  
+  // Recalculer le total après remise
   this.calculerTotal();
+  
   return this.save();
 };
 

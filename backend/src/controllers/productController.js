@@ -395,7 +395,7 @@ exports.searchProducts = async (req, res) => {
 // Réapprovisionner le stock d'un produit (Admin)
 exports.restockProduct = async (req, res) => {
   try {
-    const { quantity } = req.body;
+    const { quantity, référence, commentaire } = req.body;
     
     if (!quantity || quantity <= 0) {
       return res.status(400).json({ message: 'La quantité doit être un nombre positif' });
@@ -407,8 +407,13 @@ exports.restockProduct = async (req, res) => {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
     
-    // Utiliser la méthode de réapprovisionnement du modèle Product
-    const newStock = await product.restock(Number(quantity));
+    // Utiliser la méthode de réapprovisionnement du modèle Product avec traçabilité
+    const newStock = await product.restock(
+      Number(quantity), 
+      référence || 'Réapprovisionnement manuel',
+      req.user.id,
+      commentaire || 'Réapprovisionnement effectué par administrateur'
+    );
     
     res.json({
       message: `Stock mis à jour avec succès. Nouveau stock: ${newStock}`,
@@ -430,12 +435,12 @@ exports.getLowStockProducts = async (req, res) => {
       stock: { $lte: Number(threshold), $gt: 0 }
     })
     .sort({ stock: 1 })
-    .select('nom stock prix isActive categoryId images')
+    .select('nom stock stockAlerte stockMax prix isActive categoryId images')
     .populate('categoryId', 'nom');
     
     // Trouver les produits en rupture de stock (stock = 0)
     const outOfStockProducts = await Product.find({ stock: 0 })
-      .select('nom stock prix isActive categoryId images')
+      .select('nom stock stockAlerte stockMax prix isActive categoryId images')
       .populate('categoryId', 'nom');
     
     res.json({
@@ -446,6 +451,147 @@ exports.getLowStockProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des produits en stock faible:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Ajuster le stock d'un produit (Inventaire) (Admin)
+exports.adjustStock = async (req, res) => {
+  try {
+    const { nouveauStock, commentaire } = req.body;
+    
+    if (nouveauStock === undefined || nouveauStock < 0) {
+      return res.status(400).json({ message: 'Le nouveau stock doit être un nombre positif ou nul' });
+    }
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    
+    // Utiliser la méthode d'ajustement du modèle Product
+    const stockAjusté = await product.ajusterStock(
+      Number(nouveauStock),
+      req.user.id,
+      commentaire || 'Ajustement d\'inventaire'
+    );
+    
+    res.json({
+      message: `Stock ajusté avec succès. Nouveau stock: ${stockAjusté}`,
+      product
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'ajustement du stock:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Configurer les paramètres de stock d'un produit (Admin)
+exports.configureStockSettings = async (req, res) => {
+  try {
+    const { stockAlerte, stockMax, notifications } = req.body;
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    
+    // Mettre à jour les paramètres de stock
+    if (stockAlerte !== undefined && stockAlerte >= 0) {
+      product.stockAlerte = stockAlerte;
+    }
+    
+    if (stockMax !== undefined && stockMax >= 0) {
+      product.stockMax = stockMax;
+    }
+    
+    if (notifications) {
+      if (notifications.stockFaible !== undefined) {
+        product.notifications.stockFaible = notifications.stockFaible;
+      }
+      
+      if (notifications.stockVide !== undefined) {
+        product.notifications.stockVide = notifications.stockVide;
+      }
+    }
+    
+    await product.save();
+    
+    res.json({
+      message: 'Paramètres de stock mis à jour avec succès',
+      product
+    });
+  } catch (error) {
+    console.error('Erreur lors de la configuration des paramètres de stock:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtenir l'historique des mouvements de stock d'un produit (Admin)
+exports.getStockHistory = async (req, res) => {
+  try {
+    const { début, fin } = req.query;
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    
+    // Récupérer l'historique des mouvements
+    const mouvements = product.getHistoriqueMouvements(début, fin);
+    
+    // Si besoin de données utilisateur, on peut les peupler
+    // Cela nécessiterait une mise à jour de la méthode getHistoriqueMouvements
+    
+    res.json({
+      produit: {
+        _id: product._id,
+        nom: product.nom,
+        stock: product.stock,
+        stockAlerte: product.stockAlerte,
+        stockMax: product.stockMax
+      },
+      mouvements,
+      total: mouvements.length
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'historique des mouvements:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Réserver du stock pour un produit (sans décrémenter immédiatement)
+exports.reserveStock = async (req, res) => {
+  try {
+    const { quantity, référence, commentaire } = req.body;
+    
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({ message: 'La quantité doit être un nombre positif' });
+    }
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    
+    // Utiliser la méthode de réservation du modèle Product
+    await product.réserverStock(
+      Number(quantity),
+      référence || 'Réservation',
+      req.user.id,
+      commentaire || 'Réservation de stock'
+    );
+    
+    res.json({
+      message: `${quantity} unités de ${product.nom} réservées avec succès`,
+      stockDisponible: product.stock
+    });
+  } catch (error) {
+    console.error('Erreur lors de la réservation de stock:', error);
     res.status(500).json({ message: error.message });
   }
 }; 
