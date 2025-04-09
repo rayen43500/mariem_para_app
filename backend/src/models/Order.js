@@ -49,6 +49,10 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['En attente', 'Payée', 'Annulée'],
     default: 'En attente'
+  },
+  deliveryPersonId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DeliveryPerson'
   }
 }, {
   timestamps: true
@@ -66,13 +70,21 @@ orderSchema.methods.calculerTotal = function() {
 orderSchema.pre('save', async function(next) {
   if (this.isNew) {
     const Product = mongoose.model('Product');
-    for (const item of this.produits) {
-      const produit = await Product.findById(item.produitId);
-      if (!produit || produit.stock < item.quantité) {
-        throw new Error(`Stock insuffisant pour le produit ${produit ? produit.nom : 'inconnu'}`);
+    try {
+      for (const item of this.produits) {
+        const produit = await Product.findById(item.produitId);
+        
+        if (!produit) {
+          throw new Error(`Produit non trouvé: ${item.produitId}`);
+        }
+        
+        // Utiliser la méthode updateStock qui gère à la fois la mise à jour du stock
+        // et la vérification du statut isActive
+        await produit.updateStock(item.quantité);
       }
-      produit.stock -= item.quantité;
-      await produit.save();
+    } catch (error) {
+      // Propager l'erreur pour qu'elle soit gérée par le contrôleur
+      throw error;
     }
   }
   next();

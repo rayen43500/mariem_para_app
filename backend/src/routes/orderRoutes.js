@@ -18,5 +18,6 @@ router.get('/', orderController.getUserOrders);
 // Routes pour les administrateurs
 router.get('/:id', admin, validateObjectId('id'), orderController.getOrder);
 router.put('/:id', admin, validateObjectId('id'), orderController.updateOrderStatus);
+router.put('/:id/assign', admin, validateObjectId('id'), orderController.assignDeliveryPerson);
 
 module.exports = router; 

@@ -34,14 +34,22 @@ exports.addToCart = async (req, res) => {
   try {
     const { produitId, quantité } = req.body;
 
-    // Vérifier si le produit existe et est en stock
+    // Vérifier si le produit existe, est actif et a un stock suffisant
     const produit = await Product.findById(produitId);
-    if (!produit || !produit.isActive) {
-      return res.status(404).json({ message: 'Produit non trouvé ou non disponible' });
+    
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
     }
-
+    
+    if (!produit.isActive) {
+      return res.status(400).json({ message: 'Ce produit n\'est pas disponible actuellement' });
+    }
+    
     if (produit.stock < quantité) {
-      return res.status(400).json({ message: 'Stock insuffisant' });
+      return res.status(400).json({ 
+        message: `Stock insuffisant. Seulement ${produit.stock} unité(s) disponible(s)`,
+        disponible: produit.stock
+      });
     }
 
     // Trouver ou créer le panier
@@ -55,6 +63,7 @@ exports.addToCart = async (req, res) => {
 
     res.status(201).json(cart);
   } catch (error) {
+    console.error('Erreur lors de l\'ajout au panier:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
@@ -65,14 +74,22 @@ exports.updateCartItem = async (req, res) => {
     const { quantité } = req.body;
     const { produitId } = req.params;
 
-    // Vérifier si le produit existe et est en stock
+    // Vérifier si le produit existe, est actif et a un stock suffisant
     const produit = await Product.findById(produitId);
-    if (!produit || !produit.isActive) {
-      return res.status(404).json({ message: 'Produit non trouvé ou non disponible' });
+    
+    if (!produit) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
     }
-
-    if (produit.stock < quantité) {
-      return res.status(400).json({ message: 'Stock insuffisant' });
+    
+    if (!produit.isActive) {
+      return res.status(400).json({ message: 'Ce produit n\'est pas disponible actuellement' });
+    }
+    
+    if (quantité > 0 && produit.stock < quantité) {
+      return res.status(400).json({ 
+        message: `Stock insuffisant. Seulement ${produit.stock} unité(s) disponible(s)`,
+        disponible: produit.stock
+      });
     }
 
     // Trouver le panier
@@ -98,6 +115,7 @@ exports.updateCartItem = async (req, res) => {
 
     res.json(cart);
   } catch (error) {
+    console.error('Erreur lors de la mise à jour du panier:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };

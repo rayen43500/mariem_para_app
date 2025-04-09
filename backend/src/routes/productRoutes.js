@@ -32,5 +32,7 @@ router.post('/:id/review', auth, validateReview, productController.addReview);
 // Routes protégées (Admin)
 router.post('/', auth, isAdmin, validateProduct, productController.createProduct);
 router.put('/:id', auth, isAdmin, validateProduct, productController.updateProduct);
+router.post('/:id/restock', auth, isAdmin, productController.restockProduct);
+router.get('/inventory/low-stock', auth, isAdmin, productController.getLowStockProducts);
 
 module.exports = router; 

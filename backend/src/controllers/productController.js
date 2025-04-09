@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Promotion = require('../models/Promotion');
 
 // Créer un produit
 exports.createProduct = async (req, res) => {
@@ -97,6 +98,7 @@ exports.getProducts = async (req, res) => {
       maxPrice,
       inStock,
       onSale,
+      hasPromotion,
       sortBy,
       limit = 10,
       page = 1
@@ -142,6 +144,7 @@ exports.getProducts = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
+    // Récupérer tous les produits selon les filtres
     const products = await Product.find(query)
       .populate('categoryId', 'nom slug')
       .sort(sortOptions)
@@ -149,10 +152,102 @@ exports.getProducts = async (req, res) => {
       .limit(Number(limit));
 
     const total = await Product.countDocuments(query);
-
+    
+    // Si demandé, filtrer les produits avec promotions actives
+    const currentDate = new Date();
+    let productsWithPromotions = [...products];
+    
+    if (hasPromotion === 'true') {
+      // Récupérer toutes les promotions actives
+      const activeProductPromotions = await Promotion.find({
+        type: 'produit',
+        isActive: true,
+        dateDebut: { $lte: currentDate },
+        dateFin: { $gte: currentDate }
+      });
+      
+      const activeCategoryPromotions = await Promotion.find({
+        type: 'categorie',
+        isActive: true,
+        dateDebut: { $lte: currentDate },
+        dateFin: { $gte: currentDate }
+      });
+      
+      // Filtrer les produits qui ont une promotion
+      productsWithPromotions = products.filter(product => {
+        const hasProductPromo = activeProductPromotions.some(
+          promo => promo.cible.toString() === product._id.toString()
+        );
+        
+        const hasCategoryPromo = product.categoryId && activeCategoryPromotions.some(
+          promo => promo.cible.toString() === product.categoryId._id.toString()
+        );
+        
+        return hasProductPromo || hasCategoryPromo;
+      });
+    }
+    
+    // Enrichir les produits avec les informations de promotion
+    const enrichedProducts = await Promise.all(productsWithPromotions.map(async (product) => {
+      // Promotions spécifiques au produit
+      const productPromotions = await Promotion.find({
+        type: 'produit',
+        cible: product._id,
+        isActive: true,
+        dateDebut: { $lte: currentDate },
+        dateFin: { $gte: currentDate }
+      });
+      
+      // Promotions de la catégorie du produit
+      const categoryPromotions = product.categoryId ? await Promotion.find({
+        type: 'categorie',
+        cible: product.categoryId._id,
+        isActive: true,
+        dateDebut: { $lte: currentDate },
+        dateFin: { $gte: currentDate }
+      }) : [];
+      
+      const allPromotions = [...productPromotions, ...categoryPromotions];
+      
+      // Calculer le meilleur prix
+      let finalPrice = product.prix;
+      let activePromotion = null;
+      
+      if (allPromotions.length > 0) {
+        allPromotions.forEach(promo => {
+          const discountedPrice = promo.calculerPrixReduit(product.prix);
+          if (discountedPrice < finalPrice) {
+            finalPrice = discountedPrice;
+            activePromotion = promo;
+          }
+        });
+      }
+      
+      // Arrondir à 2 décimales
+      finalPrice = Math.round(finalPrice * 100) / 100;
+      
+      // Calculer le pourcentage de réduction
+      const discountAmount = product.prix - finalPrice;
+      const discountPercentage = Math.round((discountAmount / product.prix) * 100);
+      
+      return {
+        ...product.toObject(),
+        prixFinal: finalPrice,
+        reduction: discountAmount > 0 ? {
+          montant: discountAmount,
+          pourcentage: discountPercentage,
+          promotion: activePromotion ? {
+            id: activePromotion._id,
+            nom: activePromotion.nom,
+            type: activePromotion.type
+          } : null
+        } : null
+      };
+    }));
+    
     res.json({
-      products,
-      total,
+      products: enrichedProducts,
+      total: hasPromotion === 'true' ? enrichedProducts.length : total,
       page: Number(page),
       pages: Math.ceil(total / limit)
     });
@@ -173,7 +268,60 @@ exports.getProductById = async (req, res) => {
       return res.status(404).json({ message: 'Produit non trouvé' });
     }
 
-    res.json(product);
+    // Récupérer les promotions applicables au produit
+    const currentDate = new Date();
+    
+    // Promotions spécifiques au produit
+    const productPromotions = await Promotion.find({
+      type: 'produit',
+      cible: product._id,
+      isActive: true,
+      dateDebut: { $lte: currentDate },
+      dateFin: { $gte: currentDate }
+    });
+    
+    // Promotions de la catégorie du produit
+    const categoryPromotions = product.categoryId ? await Promotion.find({
+      type: 'categorie',
+      cible: product.categoryId._id,
+      isActive: true,
+      dateDebut: { $lte: currentDate },
+      dateFin: { $gte: currentDate }
+    }) : [];
+    
+    const allPromotions = [...productPromotions, ...categoryPromotions];
+    
+    // Calculer le meilleur prix après promotions
+    let finalPrice = product.prix;
+    let activePromotion = null;
+    
+    if (allPromotions.length > 0) {
+      allPromotions.forEach(promo => {
+        const discountedPrice = promo.calculerPrixReduit(product.prix);
+        if (discountedPrice < finalPrice) {
+          finalPrice = discountedPrice;
+          activePromotion = promo;
+        }
+      });
+    }
+    
+    // Arrondir à 2 décimales
+    finalPrice = Math.round(finalPrice * 100) / 100;
+    
+    // Calculer le pourcentage de réduction
+    const discountAmount = product.prix - finalPrice;
+    const discountPercentage = Math.round((discountAmount / product.prix) * 100);
+    
+    res.json({
+      ...product.toObject(),
+      promotions: allPromotions,
+      prixFinal: finalPrice,
+      reduction: discountAmount > 0 ? {
+        montant: discountAmount,
+        pourcentage: discountPercentage,
+        promotion: activePromotion
+      } : null
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erreur serveur' });
@@ -241,5 +389,63 @@ exports.searchProducts = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// Réapprovisionner le stock d'un produit (Admin)
+exports.restockProduct = async (req, res) => {
+  try {
+    const { quantity } = req.body;
+    
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({ message: 'La quantité doit être un nombre positif' });
+    }
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Produit non trouvé' });
+    }
+    
+    // Utiliser la méthode de réapprovisionnement du modèle Product
+    const newStock = await product.restock(Number(quantity));
+    
+    res.json({
+      message: `Stock mis à jour avec succès. Nouveau stock: ${newStock}`,
+      product
+    });
+  } catch (error) {
+    console.error('Erreur lors du réapprovisionnement:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Obtenir les produits en rupture de stock ou en stock faible (Admin)
+exports.getLowStockProducts = async (req, res) => {
+  try {
+    const { threshold = 5 } = req.query;
+    
+    // Trouver les produits dont le stock est inférieur ou égal au seuil
+    const lowStockProducts = await Product.find({
+      stock: { $lte: Number(threshold), $gt: 0 }
+    })
+    .sort({ stock: 1 })
+    .select('nom stock prix isActive categoryId images')
+    .populate('categoryId', 'nom');
+    
+    // Trouver les produits en rupture de stock (stock = 0)
+    const outOfStockProducts = await Product.find({ stock: 0 })
+      .select('nom stock prix isActive categoryId images')
+      .populate('categoryId', 'nom');
+    
+    res.json({
+      lowStockProducts,
+      outOfStockProducts,
+      totalLowStock: lowStockProducts.length,
+      totalOutOfStock: outOfStockProducts.length
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des produits en stock faible:', error);
+    res.status(500).json({ message: error.message });
   }
 }; 

@@ -100,5 +100,55 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// Assigner un livreur à une commande (admin)
+exports.assignDeliveryPerson = async (req, res) => {
+  try {
+    const { deliveryPersonId } = req.body;
+    
+    if (!deliveryPersonId) {
+      return res.status(400).json({ message: 'ID du livreur requis' });
+    }
+    
+    // Vérifier si le livreur existe
+    const DeliveryPerson = require('../models/DeliveryPerson');
+    const deliveryPerson = await DeliveryPerson.findById(deliveryPersonId);
+    
+    if (!deliveryPerson) {
+      return res.status(404).json({ message: 'Livreur non trouvé' });
+    }
+    
+    // Mettre à jour la commande
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+    
+    // Assigner le livreur à la commande
+    order.deliveryPersonId = deliveryPerson._id;
+    
+    // Si la commande est en statut "En attente", la passer en statut "Expédiée"
+    if (order.statut === 'En attente') {
+      order.statut = 'Expédiée';
+      order.dateLivraison = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // Livraison dans 2 jours
+    }
+    
+    await order.save();
+    
+    // Ajouter la commande aux commandes assignées du livreur
+    if (!deliveryPerson.assignedOrders.includes(order._id)) {
+      deliveryPerson.assignedOrders.push(order._id);
+      await deliveryPerson.save();
+    }
+    
+    res.json({
+      message: 'Livreur assigné avec succès',
+      order
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Exporter le middleware de rate limiting
 exports.orderLimiter = orderLimiter; 

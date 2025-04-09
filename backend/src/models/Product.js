@@ -95,18 +95,62 @@ productSchema.pre('save', function(next) {
 });
 
 // Méthode pour ajouter un avis
-productSchema.methods.addReview = async function(userId, nom, note, commentaire) {
-  const review = {
+productSchema.methods.addReview = async function(userId, userName, note, commentaire) {
+  this.reviews.push({
     userId,
-    nom,
+    nom: userName,
     note,
     commentaire
-  };
+  });
 
-  this.reviews.push(review);
-  this.calculateAverageRating();
+  await this.calculateAverageRating();
   await this.save();
-  return this;
+};
+
+// Middleware pour gérer le stock
+productSchema.pre('save', function(next) {
+  // Si le stock est modifié et atteint 0, marquer le produit comme indisponible
+  if (this.isModified('stock') && this.stock === 0) {
+    this.isActive = false;
+  }
+  
+  // Si le stock est modifié, devient > 0 et le produit est inactif à cause du stock (pas d'autres raisons)
+  // alors réactiver le produit
+  if (this.isModified('stock') && this.stock > 0 && this.isActive === false) {
+    this.isActive = true;
+  }
+  
+  next();
+});
+
+// Méthode pour mettre à jour le stock (avec vérification de disponibilité)
+productSchema.methods.updateStock = async function(quantity) {
+  // Vérifier si la quantité demandée est disponible
+  if (this.stock < quantity) {
+    throw new Error(`Stock insuffisant. Seulement ${this.stock} unités disponibles.`);
+  }
+  
+  // Mettre à jour le stock
+  this.stock -= quantity;
+  
+  // Sauvegarder le produit (cela déclenchera le middleware pre-save)
+  await this.save();
+  
+  return this.stock;
+};
+
+// Méthode pour réapprovisionner le stock
+productSchema.methods.restock = async function(quantity) {
+  if (quantity <= 0) {
+    throw new Error('La quantité à ajouter doit être supérieure à 0.');
+  }
+  
+  this.stock += quantity;
+  
+  // Sauvegarder le produit (cela déclenchera le middleware pre-save)
+  await this.save();
+  
+  return this.stock;
 };
 
 module.exports = mongoose.model('Product', productSchema); 
