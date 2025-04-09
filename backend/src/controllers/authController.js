@@ -37,7 +37,8 @@ exports.register = async (req, res) => {
     user = new User({
       nom,
       email,
-      motDePasse
+      motDePasse,
+      role: req.body.role ? req.body.role.charAt(0).toUpperCase() + req.body.role.slice(1).toLowerCase() : 'Client'
     });
 
     // Générer le token de vérification

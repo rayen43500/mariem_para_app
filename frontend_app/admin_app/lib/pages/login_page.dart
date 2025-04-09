@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +13,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -27,8 +29,11 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
       
       try {
-        // TODO: Implémenter la logique de connexion
-        await Future.delayed(const Duration(seconds: 2)); // Simulation
+        await _authService.login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+        
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
@@ -36,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur: ${e.toString()}'),
+              content: Text(e.toString()),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.red.shade700,
               shape: RoundedRectangleBorder(
