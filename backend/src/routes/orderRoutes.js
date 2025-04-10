@@ -1,23 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
-const auth = require('../middleware/auth');
-const admin = require('../middleware/admin');
+const { protect, admin } = require('../middleware/auth');
 const validateObjectId = require('../middleware/validateObjectId');
+const { rateLimit } = require('express-rate-limit');
+
+// Rate limiter pour les endpoints commandes
+const orderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // Limite à 60 requêtes par fenêtre
+  message: 'Trop de requêtes, veuillez réessayer plus tard.'
+});
 
 // Appliquer le rate limiting à toutes les routes
-router.use(orderController.orderLimiter);
+router.use(orderLimiter);
 
 // Routes protégées par authentification
-router.use(auth);
+router.use(protect);
 
 // Routes pour les clients
 router.post('/', orderController.createOrder);
 router.get('/', orderController.getUserOrders);
 
 // Routes pour les administrateurs
-router.get('/:id', admin, validateObjectId('id'), orderController.getOrder);
-router.put('/:id', admin, validateObjectId('id'), orderController.updateOrderStatus);
-router.put('/:id/assign', admin, validateObjectId('id'), orderController.assignDeliveryPerson);
+router.get('/:id', admin, validateObjectId(), orderController.getOrder);
+router.put('/:id', admin, validateObjectId(), orderController.updateOrderStatus);
+router.put('/:id/assign', admin, validateObjectId(), orderController.assignDeliveryPerson);
 
 module.exports = router; 

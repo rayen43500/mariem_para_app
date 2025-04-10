@@ -11,6 +11,12 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const deliveryRoutes = require('./routes/deliveryRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -33,6 +39,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/produits', productRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/commandes', orderRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

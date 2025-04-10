@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
 import '../services/auth_service.dart';
+import '../services/promotion_service.dart';
+import '../services/product_service.dart';
+import '../services/category_service.dart';
+import '../models/promotion_model.dart';
+import 'add_promotion.dart';
 
 class PromotionsPage extends StatefulWidget {
   const PromotionsPage({super.key});
@@ -10,85 +17,162 @@ class PromotionsPage extends StatefulWidget {
 
 class _PromotionsPageState extends State<PromotionsPage> {
   final _authService = AuthService();
-  bool _isLoading = false;
+  final _promotionService = PromotionService();
+  final _productService = ProductService();
+  final _categoryService = CategoryService();
+  
+  bool _isLoading = true;
   String _searchQuery = '';
   String _selectedType = 'Tous';
-  final List<String> _typeOptions = ['Tous', 'Pourcentage', 'Montant fixe', 'Livraison gratuite'];
+  final List<String> _typeOptions = ['Tous', 'pourcentage', 'montant', 'livraison'];
+  
+  List<Promotion> _promotions = [];
+  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _categories = [];
 
-  final List<Map<String, dynamic>> _promotions = [
-    {
-      'id': 'PROMO001',
-      'code': 'BIENVENUE20',
-      'description': '20% de réduction sur votre première commande',
-      'type': 'Pourcentage',
-      'valeur': 20,
-      'dateDebut': '01/05/2023',
-      'dateFin': '31/12/2023',
-      'minAchat': 50,
-      'utilisations': 124,
-      'limiteUtilisations': 500,
-      'actif': true,
-    },
-    {
-      'id': 'PROMO002',
-      'code': 'ETE15',
-      'description': '15% de réduction sur les accessoires d\'été',
-      'type': 'Pourcentage',
-      'valeur': 15,
-      'dateDebut': '01/06/2023',
-      'dateFin': '31/08/2023',
-      'minAchat': 30,
-      'utilisations': 87,
-      'limiteUtilisations': 200,
-      'actif': true,
-    },
-    {
-      'id': 'PROMO003',
-      'code': 'FREESHIP',
-      'description': 'Livraison gratuite sans minimum d\'achat',
-      'type': 'Livraison gratuite',
-      'valeur': 0,
-      'dateDebut': '15/05/2023',
-      'dateFin': '15/06/2023',
-      'minAchat': 0,
-      'utilisations': 210,
-      'limiteUtilisations': 300,
-      'actif': true,
-    },
-    {
-      'id': 'PROMO004',
-      'code': 'REDUC10',
-      'description': '10€ de réduction sur votre commande',
-      'type': 'Montant fixe',
-      'valeur': 10,
-      'dateDebut': '01/04/2023',
-      'dateFin': '30/06/2023',
-      'minAchat': 60,
-      'utilisations': 156,
-      'limiteUtilisations': 250,
-      'actif': true,
-    },
-    {
-      'id': 'PROMO005',
-      'code': 'HIVER2023',
-      'description': '25% de réduction sur la collection hiver',
-      'type': 'Pourcentage',
-      'valeur': 25,
-      'dateDebut': '01/11/2023',
-      'dateFin': '31/01/2024',
-      'minAchat': 80,
-      'utilisations': 0,
-      'limiteUtilisations': 150,
-      'actif': false,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadPromotions();
+  }
+
+  // Charger les promotions depuis le backend
+  Future<void> _loadPromotions() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final data = await _promotionService.getAllPromotions();
+      List<Promotion> promotions = data
+          .map((item) => Promotion.fromJson(item))
+          .toList();
+      
+      setState(() {
+        _promotions = promotions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    }
+  }
+
+  // Chargement des produits 
+  Future<void> _loadProducts() async {
+    try {
+      final response = await _productService.getProducts(limit: 100);
+      setState(() {
+        _products = List<Map<String, dynamic>>.from(response['products']);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du chargement des produits: $e')),
+        );
+      }
+    }
+  }
+
+  // Chargement des catégories
+  Future<void> _loadCategories() async {
+    try {
+      final data = await _categoryService.getCategories();
+      setState(() {
+        _categories = List<Map<String, dynamic>>.from(data);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du chargement des catégories: $e')),
+        );
+      }
+    }
+  }
+
+  // Suppression d'une promotion
+  Future<void> _deletePromotion(String id) async {
+    try {
+      final result = await _promotionService.deletePromotion(id);
+      if (result) {
+        setState(() {
+          _promotions.removeWhere((promo) => promo.id == id);
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Promotion supprimée avec succès')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    }
+  }
+
+  // Toggle l'état actif d'une promotion
+  Future<void> _togglePromotionStatus(Promotion promo) async {
+    try {
+      final updatedPromo = await _promotionService.updatePromotion(
+        promo.id,
+        {'isActive': !promo.isActive},
+      );
+      
+      setState(() {
+        final index = _promotions.indexWhere((p) => p.id == promo.id);
+        if (index != -1) {
+          _promotions[index] = Promotion.fromJson(updatedPromo);
+        }
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Promotion ${updatedPromo['isActive'] ? 'activée' : 'désactivée'} avec succès',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e')),
+        );
+      }
+    }
+  }
+
+  // Navigation vers la page d'ajout de promotion
+  Future<void> _navigateToAddPromotion() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddPromotionPage()),
+    );
+    
+    if (result == true) {
+      _loadPromotions();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredPromotions = _promotions.where((promo) {
-      final matchesType = _selectedType == 'Tous' || promo['type'] == _selectedType;
-      final matchesSearch = promo['code'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          promo['description'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesType = _selectedType == 'Tous' || promo.typeReduction == _selectedType;
+      final matchesSearch = (promo.codePromo?.toLowerCase() ?? '').contains(_searchQuery.toLowerCase()) ||
+          (promo.description?.toLowerCase() ?? '').contains(_searchQuery.toLowerCase()) ||
+          promo.nom.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesType && matchesSearch;
     }).toList();
 
@@ -200,20 +284,18 @@ class _PromotionsPageState extends State<PromotionsPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Logique pour ajouter une nouvelle promotion
-        },
+        onPressed: _navigateToAddPromotion,
         backgroundColor: theme.colorScheme.primary,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildPromoCard(Map<String, dynamic> promo, ThemeData theme, bool isSmallScreen) {
-    final bool isActive = promo['actif'];
+  Widget _buildPromoCard(Promotion promo, ThemeData theme, bool isSmallScreen) {
+    final bool isActive = promo.isActive;
     final now = DateTime.now();
-    final dateDebut = _parseDate(promo['dateDebut']);
-    final dateFin = _parseDate(promo['dateFin']);
+    final dateDebut = promo.dateDebut;
+    final dateFin = promo.dateFin;
     final bool isExpired = dateFin.isBefore(now);
     final bool isUpcoming = dateDebut.isAfter(now);
     
@@ -253,7 +335,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        promo['code'],
+                        promo.nom,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -261,7 +343,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        promo['description'],
+                        promo.description ?? '',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -296,7 +378,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Utilisations: ${promo['utilisations']}/${promo['limiteUtilisations']}',
+                  'Utilisations: ${promo.utilisations}/${promo.limiteUtilisations}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade700,
@@ -317,7 +399,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                     IconButton(
                       icon: Icon(isActive ? Icons.toggle_on : Icons.toggle_off),
                       onPressed: () {
-                        // Logique pour activer/désactiver la promotion
+                        _togglePromotionStatus(promo);
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -327,7 +409,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
                     IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () {
-                        // Logique pour supprimer la promotion
+                        _showDeleteConfirmation(promo);
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -343,20 +425,46 @@ class _PromotionsPageState extends State<PromotionsPage> {
     );
   }
 
-  Widget _buildPromoDetails(Map<String, dynamic> promo, ThemeData theme) {
+  void _showDeleteConfirmation(Promotion promo) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Êtes-vous sûr de vouloir supprimer la promotion "${promo.nom}" ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deletePromotion(promo.id);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromoDetails(Promotion promo, ThemeData theme) {
     Color typeColor;
     IconData typeIcon;
 
-    switch (promo['type']) {
-      case 'Pourcentage':
+    switch (promo.typeReduction) {
+      case 'pourcentage':
         typeColor = Colors.blue;
         typeIcon = Icons.percent;
         break;
-      case 'Montant fixe':
+      case 'montant':
         typeColor = Colors.green;
         typeIcon = Icons.euro;
         break;
-      case 'Livraison gratuite':
+      case 'livraison':
         typeColor = Colors.orange;
         typeIcon = Icons.local_shipping;
         break;
@@ -376,28 +484,13 @@ class _PromotionsPageState extends State<PromotionsPage> {
             color: typeColor,
           ),
           label: Text(
-            '${promo['type']} ${promo['type'] == 'Pourcentage' ? '${promo['valeur']}%' : promo['type'] == 'Montant fixe' ? '${promo['valeur']}€' : ''}',
+            '${promo.typeReduction} ${promo.typeReduction == 'pourcentage' ? '${promo.valeurReduction}%' : promo.typeReduction == 'montant' ? '${promo.valeurReduction}€' : ''}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
           backgroundColor: Colors.grey.shade100,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        if (promo['minAchat'] > 0)
-          Chip(
-            avatar: Icon(
-              Icons.shopping_cart,
-              size: 16,
-              color: theme.colorScheme.primary,
-            ),
-            label: Text(
-              'Min. ${promo['minAchat']}€',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-            ),
-            backgroundColor: Colors.grey.shade100,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
         Chip(
           avatar: Icon(
             Icons.date_range,
@@ -405,7 +498,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             color: Colors.purple,
           ),
           label: Text(
-            '${promo['dateDebut']} - ${promo['dateFin']}',
+            '${promo.dateDebutFormatted} - ${promo.dateFinFormatted}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
           backgroundColor: Colors.grey.shade100,
@@ -417,7 +510,12 @@ class _PromotionsPageState extends State<PromotionsPage> {
   }
 
   DateTime _parseDate(String date) {
-    final parts = date.split('/');
-    return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+    try {
+      final parts = date.split('/');
+      return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+    } catch (e) {
+      // Fallback for when the date is already a DateTime
+      return DateTime.now();
+    }
   }
 }

@@ -1,228 +1,276 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-const { rateLimit } = require('express-rate-limit');
+const Coupon = require('../models/Coupon');
+const { cartLimiter } = require('../middleware/rateLimiter');
 
-// Configuration du rate limiting
-const cartLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limite chaque IP à 100 requêtes par fenêtre
-});
-
-// Obtenir le panier de l'utilisateur
+// Get user's cart
 exports.getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ userId: req.user.id })
-      .populate('produits.produitId', 'nom prix images stock');
+    let cart = await Cart.findOne({ user: req.user._id })
+      .populate('items.produit', 'nom prix images stock prixPromo discount')
+      .populate('promoCode', 'code type value');
 
     if (!cart) {
-      return res.status(200).json({
-        produits: [],
-        totalPrix: 0,
-        codePromo: null,
-        réduction: 0
-      });
+      cart = await Cart.create({ user: req.user._id });
     }
 
-    res.json(cart);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-};
-
-// Ajouter un produit au panier
-exports.addToCart = async (req, res) => {
-  try {
-    const { produitId, quantite } = req.body;
-    if (!produitId || !quantite || quantite < 1) {
-      return res.status(400).json({ message: 'ID du produit et quantité positive sont requis' });
-    }
-
-    // Vérifie si le produit existe
-    const produit = await Product.findById(produitId);
-    if (!produit) {
-      return res.status(404).json({ message: 'Produit non trouvé' });
-    }
-
-    // Vérifie si le produit est disponible
-    if (!produit.disponible) {
-      return res.status(400).json({ message: 'Ce produit n\'est pas disponible actuellement' });
-    }
-
-    // Vérifie si la quantité demandée est disponible en stock
-    if (produit.stock < quantite) {
-      return res.status(400).json({ 
-        message: `Stock insuffisant. Seulement ${produit.stock} unités disponibles.`,
-        stockDisponible: produit.stock 
-      });
-    }
-
-    // Trouver ou créer le panier de l'utilisateur
-    let cart = await Cart.findOne({ userId: req.user.id });
-
-    if (!cart) {
-      // Créer un nouveau panier si l'utilisateur n'en a pas
-      cart = new Cart({
-        userId: req.user.id,
-        produits: [],
-        totalPrix: 0
-      });
-    }
-
-    // Ajouter le produit au panier
-    await cart.ajouterProduit(produitId, quantite, produit.prix);
-
-    // Remplir les détails des produits pour la réponse
-    await cart.populate('produits.produitId', 'nom prix images stock');
-    
-    res.status(200).json({
-      message: 'Produit ajouté au panier avec succès',
-      cart
+    res.json({
+      success: true,
+      data: cart
     });
   } catch (error) {
-    console.error('Erreur lors de l\'ajout au panier:', error);
-    res.status(500).json({ message: 'Erreur serveur lors de l\'ajout au panier' });
+    console.error('Error getting cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error retrieving cart'
+    });
   }
 };
 
-// Mettre à jour la quantité d'un produit
-exports.updateCartItem = async (req, res) => {
+// Add product to cart
+exports.addToCart = async (req, res) => {
   try {
-    const { quantité } = req.body;
-    const { produitId } = req.params;
+    const { produitId, quantite = 1 } = req.body;
 
-    // Vérifier si le produit existe, est actif et a un stock suffisant
-    const produit = await Product.findById(produitId);
-    
-    if (!produit) {
-      return res.status(404).json({ message: 'Produit non trouvé' });
-    }
-    
-    if (!produit.disponible) {
-      return res.status(400).json({ message: 'Ce produit n\'est pas disponible actuellement' });
-    }
-    
-    if (quantité > 0 && produit.stock < quantité) {
-      return res.status(400).json({ 
-        message: `Stock insuffisant. Seulement ${produit.stock} unité(s) disponible(s)`,
-        disponible: produit.stock
+    // Validate product exists and has stock
+    const product = await Product.findById(produitId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
       });
     }
 
-    // Trouver le panier
-    const cart = await Cart.findOne({ userId: req.user.id });
+    if (product.stock < quantite) {
+      return res.status(400).json({
+        success: false,
+        error: 'Not enough stock available'
+      });
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
+      cart = await Cart.create({ user: req.user._id });
     }
 
-    // Mettre à jour la quantité
-    const itemIndex = cart.produits.findIndex(item => item.produitId.toString() === produitId);
-    if (itemIndex === -1) {
-      return res.status(404).json({ message: 'Produit non trouvé dans le panier' });
-    }
+    // Check if product already in cart
+    const existingItem = cart.items.find(item => 
+      item.produit.toString() === produitId
+    );
 
-    if (quantité === 0) {
-      await cart.supprimerProduit(produitId);
+    if (existingItem) {
+      // Update quantity if product exists
+      existingItem.quantite += quantite;
+      if (existingItem.quantite > product.stock) {
+        return res.status(400).json({
+          success: false,
+          error: 'Not enough stock available'
+        });
+      }
     } else {
-      cart.produits[itemIndex].quantité = quantité;
-      cart.produits[itemIndex].prixUnitaire = produit.prix;
-      await cart.calculerTotal();
-      await cart.save();
+      // Add new item if product doesn't exist
+      cart.items.push({
+        produit: produitId,
+        quantite
+      });
     }
 
-    // Remplir les détails des produits pour la réponse
-    await cart.populate('produits.produitId', 'nom prix images stock');
-    res.json(cart);
+    await cart.save();
+    await cart.populate('items.produit', 'nom prix images stock prixPromo discount');
+    await cart.populate('promoCode', 'code type value');
+
+    res.json({
+      success: true,
+      data: cart
+    });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du panier:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Error adding to cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error adding product to cart'
+    });
   }
 };
 
-// Supprimer un produit du panier
+// Update product quantity in cart
+exports.updateQuantity = async (req, res) => {
+  try {
+    const { quantite } = req.body;
+    const { produitId } = req.params;
+
+    if (quantite < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Quantity must be at least 1'
+      });
+    }
+
+    const product = await Product.findById(produitId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    if (product.stock < quantite) {
+      return res.status(400).json({
+        success: false,
+        error: 'Not enough stock available'
+      });
+    }
+
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cart not found'
+      });
+    }
+
+    const itemIndex = cart.items.findIndex(item => 
+      item.produit.toString() === produitId
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found in cart'
+      });
+    }
+
+    cart.items[itemIndex].quantite = quantite;
+    await cart.save();
+    await cart.populate('items.produit', 'nom prix images stock prixPromo discount');
+    await cart.populate('promoCode', 'code type value');
+
+    res.json({
+      success: true,
+      data: cart
+    });
+  } catch (error) {
+    console.error('Error updating cart quantity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error updating cart quantity'
+    });
+  }
+};
+
+// Remove product from cart
 exports.removeFromCart = async (req, res) => {
   try {
     const { produitId } = req.params;
 
-    const cart = await Cart.findOne({ userId: req.user.id });
+    const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
+      return res.status(404).json({
+        success: false,
+        error: 'Cart not found'
+      });
     }
 
-    await cart.supprimerProduit(produitId);
-    
-    // Remplir les détails des produits pour la réponse
-    await cart.populate('produits.produitId', 'nom prix images stock');
-    res.json(cart);
-  } catch (error) {
-    console.error('Erreur lors de la suppression du produit:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
-  }
-};
+    cart.items = cart.items.filter(item => 
+      item.produit.toString() !== produitId
+    );
 
-// Vider le panier
-exports.clearCart = async (req, res) => {
-  try {
-    const cart = await Cart.findOne({ userId: req.user.id });
-    if (!cart) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
-    }
+    await cart.save();
+    await cart.populate('items.produit', 'nom prix images stock prixPromo discount');
+    await cart.populate('promoCode', 'code type value');
 
-    await cart.viderPanier();
-    res.json({ 
-      message: 'Panier vidé avec succès',
-      cart
+    res.json({
+      success: true,
+      data: cart
     });
   } catch (error) {
-    console.error('Erreur lors du vidage du panier:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Error removing from cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error removing product from cart'
+    });
   }
 };
 
-// Appliquer un code promo
-exports.applyCoupon = async (req, res) => {
+// Clear cart
+exports.clearCart = async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cart not found'
+      });
+    }
+
+    cart.items = [];
+    cart.promoCode = null;
+    await cart.save();
+
+    res.json({
+      success: true,
+      data: cart
+    });
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error clearing cart'
+    });
+  }
+};
+
+// Apply promo code
+exports.applyPromoCode = async (req, res) => {
   try {
     const { code } = req.body;
 
-    if (!code) {
-      return res.status(400).json({ message: 'Code promo requis' });
-    }
-
-    const cart = await Cart.findOne({ userId: req.user.id });
-    if (!cart) {
-      return res.status(404).json({ message: 'Panier non trouvé' });
-    }
-
-    // Recherche du coupon dans la base de données
-    const Coupon = require('../models/Coupon');
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
-
+    const coupon = await Coupon.findOne({ code });
     if (!coupon) {
-      return res.status(400).json({ message: 'Code promo invalide' });
+      return res.status(404).json({
+        success: false,
+        error: 'Invalid promo code'
+      });
     }
 
-    // Vérification de la validité du coupon
-    const totalPanier = cart.totalPrix || 0;
-    const validationResult = coupon.isValid(totalPanier);
-    if (!validationResult.valid) {
-      return res.status(400).json({ message: validationResult.message });
+    if (!coupon.isValid()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Promo code has expired or reached usage limit'
+      });
     }
 
-    // Application du coupon au panier
-    try {
-      await cart.appliquerCodePromo(code, validationResult.discount);
-      
-      // Incrémenter le compteur d'utilisation
-      await coupon.use();
-  
-      res.json(cart);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cart not found'
+      });
     }
+
+    if (cart.items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cart is empty'
+      });
+    }
+
+    cart.promoCode = coupon._id;
+    await cart.save();
+    await cart.populate('items.produit', 'nom prix images stock prixPromo discount');
+    await cart.populate('promoCode', 'code type value');
+
+    res.json({
+      success: true,
+      data: cart
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Error applying promo code:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error applying promo code'
+    });
   }
 };
 
-// Exporter le middleware de rate limiting
+// Export rate limiter for use in routes
 exports.cartLimiter = cartLimiter; 
