@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:logger/logger.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/auth_service.dart';
 import '../services/product_service.dart';
 import '../services/image_service.dart';
 import '../services/category_service.dart';
 import '../models/product_model.dart';
 import 'dart:async';
+import 'dart:typed_data';
 
 class ProduitsPage extends StatefulWidget {
   const ProduitsPage({super.key});
@@ -35,6 +37,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
   
   // Pour la gestion des images
   File? _selectedImage;
+  Uint8List? _webImage; // Image pour le web
   bool _isUploadingImage = false;
   String? _uploadedImageUrl;
 
@@ -136,11 +139,24 @@ class _ProduitsPageState extends State<ProduitsPage> {
   // Méthode pour choisir une image
   Future<void> _pickImage() async {
     try {
-      final File? image = await _imageService.pickImageFromGallery();
-      if (image != null) {
-        setState(() {
-          _selectedImage = image;
-        });
+      if (kIsWeb) {
+        // Pour le Web
+        final result = await _imageService.pickImageForWeb();
+        if (result != null) {
+          setState(() {
+            _webImage = result;
+            _selectedImage = null; // Réinitialiser l'image mobile
+          });
+        }
+      } else {
+        // Pour Mobile
+        final File? image = await _imageService.pickImageFromGallery();
+        if (image != null) {
+          setState(() {
+            _selectedImage = image;
+            _webImage = null; // Réinitialiser l'image web
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -153,14 +169,17 @@ class _ProduitsPageState extends State<ProduitsPage> {
 
   // Méthode pour télécharger l'image
   Future<String?> _uploadSelectedImage() async {
-    if (_selectedImage == null) return null;
+    if (_selectedImage == null && _webImage == null) return null;
     
     setState(() {
       _isUploadingImage = true;
     });
     
     try {
-      final imageUrl = await _imageService.uploadImage(_selectedImage!);
+      final imageUrl = kIsWeb 
+          ? _webImage != null ? await _imageService.uploadImage(_webImage) : null
+          : _selectedImage != null ? await _imageService.uploadImage(_selectedImage) : null;
+      
       setState(() {
         _uploadedImageUrl = imageUrl;
         _isUploadingImage = false;
@@ -410,13 +429,42 @@ class _ProduitsPageState extends State<ProduitsPage> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '€${product.prix.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: theme.colorScheme.primary,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: product.prixPromo != null 
+                        ? RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '€${product.prix.toStringAsFixed(2)} ',
+                                  style: TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '€${product.prixPromo!.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Text(
+                            '€${product.prix.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -480,6 +528,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
     
     // Réinitialiser les variables d'image
     _selectedImage = null;
+    _webImage = null;
     _uploadedImageUrl = null;
     
     // Si on édite, on initialise avec les valeurs existantes
@@ -564,7 +613,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                           icon: const Icon(Icons.photo_library),
                           onPressed: () async {
                             await _pickImage();
-                            if (_selectedImage != null) {
+                            if (_selectedImage != null || _webImage != null) {
                               setState(() {
                                 // Mise à jour de l'interface avec l'image sélectionnée
                               });
@@ -576,7 +625,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    if (_selectedImage != null)
+                    if (_selectedImage != null || _webImage != null)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -590,11 +639,18 @@ class _ProduitsPageState extends State<ProduitsPage> {
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                Image.file(
-                                  _selectedImage!,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                ),
+                                if (_webImage != null && kIsWeb)
+                                  Image.memory(
+                                    _webImage!,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  )
+                                else if (_selectedImage != null && !kIsWeb)
+                                  Image.file(
+                                    _selectedImage!,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  ),
                                 if (_isUploadingImage)
                                   Container(
                                     color: Colors.black.withOpacity(0.5),
@@ -626,6 +682,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                                 onPressed: () {
                                   setState(() {
                                     _selectedImage = null;
+                                    _webImage = null;
                                     _uploadedImageUrl = null;
                                   });
                                 },
@@ -712,7 +769,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       
                       // Télécharger l'image si présente
                       String? imageUrl;
-                      if (_selectedImage != null) {
+                      if (_selectedImage != null || _webImage != null) {
                         imageUrl = await _uploadSelectedImage();
                         if (imageUrl == null) {
                           Navigator.pop(context); // Fermer l'indicateur de chargement

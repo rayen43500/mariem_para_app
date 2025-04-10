@@ -37,8 +37,8 @@ class Product {
       categorie: json['categoryId'] is Map ? json['categoryId']['nom'] ?? 'Non catégorisé' : 'Non catégorisé',
       categorieId: json['categoryId'] is Map ? json['categoryId']['_id'] ?? null : json['categoryId']?.toString(),
       disponible: json['isActive'] ?? false && (json['stock'] ?? 0) > 0,
-      prixPromo: json['prixPromo'] != null ? json['prixPromo'].toDouble() : null,
-      reduction: json['reduction'] != null ? json['reduction'].toDouble() : null,
+      prixPromo: json['prixPromo'] != null ? (json['prixPromo'] is num ? json['prixPromo'].toDouble() : double.tryParse(json['prixPromo'].toString())) : null,
+      reduction: json['reduction'] != null ? (json['reduction'] is num ? json['reduction'].toDouble() : double.tryParse(json['reduction'].toString())) : null,
     );
     
     return product;
