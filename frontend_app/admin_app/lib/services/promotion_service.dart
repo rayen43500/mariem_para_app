@@ -76,6 +76,7 @@ class PromotionService {
         throw Exception('Non authentifié');
       }
 
+      _logger.i('Token d\'authentification: $token');
       _logger.i('Création de promotion: ${json.encode(promotionData)}');
 
       final response = await http.post(

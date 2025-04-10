@@ -115,6 +115,7 @@ class AuthService {
       if (userStr != null) {
         final user = jsonDecode(userStr);
         _logger.i('Utilisateur actuel récupéré: ${user['nom']} (${user['role']})');
+        _logger.i('Données utilisateur complètes: $user');
         return user;
       }
       _logger.i('Aucun utilisateur trouvé dans le stockage');

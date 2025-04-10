@@ -33,6 +33,20 @@ class _PromotionsPageState extends State<PromotionsPage> {
   @override
   void initState() {
     super.initState();
+    _checkAdminAccess();
+  }
+
+  Future<void> _checkAdminAccess() async {
+    final currentUser = await _authService.getCurrentUser();
+    if (currentUser == null || currentUser['role'] != 'Admin') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vous n\'avez pas les droits d\'administrateur nécessaires pour accéder à cette page')),
+        );
+        Navigator.of(context).pop();
+      }
+      return;
+    }
     _loadPromotions();
   }
 

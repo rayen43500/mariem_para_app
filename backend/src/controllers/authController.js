@@ -80,6 +80,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
+    console.log('Utilisateur trouvé:', user.email, 'Rôle:', user.role);
+
     // Vérifier si le compte est actif
     if (!user.isActive) {
       return res.status(403).json({ message: 'Ce compte a été désactivé' });

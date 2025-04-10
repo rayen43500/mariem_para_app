@@ -4,6 +4,7 @@ import '../services/promotion_service.dart';
 import '../services/product_service.dart';
 import '../services/category_service.dart';
 import '../models/promotion_model.dart';
+import '../services/auth_service.dart';
 
 class AddPromotionPage extends StatefulWidget {
   const AddPromotionPage({super.key});
@@ -17,6 +18,7 @@ class _AddPromotionPageState extends State<AddPromotionPage> {
   final _promotionService = PromotionService();
   final _productService = ProductService();
   final _categoryService = CategoryService();
+  final _authService = AuthService();
   
   bool _isLoading = false;
   bool _isSubmitting = false;
@@ -65,8 +67,9 @@ class _AddPromotionPageState extends State<AddPromotionPage> {
       final results = await Future.wait([productsFuture, categoriesFuture]);
       
       setState(() {
-        _products = List<Map<String, dynamic>>.from(results[0]['products']);
-        _categories = List<Map<String, dynamic>>.from(results[1]);
+        final productsResponse = results[0] as Map<String, dynamic>;
+        _products = List<Map<String, dynamic>>.from(productsResponse['products']);
+        _categories = List<Map<String, dynamic>>.from(results[1] as List);
         _isLoading = false;
       });
     } catch (e) {
@@ -155,6 +158,15 @@ class _AddPromotionPageState extends State<AddPromotionPage> {
     if (_selectedTargetId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez sélectionner une cible')),
+      );
+      return;
+    }
+    
+    // Check if user has admin privileges
+    final currentUser = await _authService.getCurrentUser();
+    if (currentUser == null || currentUser['role'] != 'Admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vous n\'avez pas les droits d\'administrateur nécessaires pour créer une promotion')),
       );
       return;
     }
