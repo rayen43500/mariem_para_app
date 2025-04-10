@@ -3,60 +3,60 @@ class Product {
   final String nom;
   final String description;
   final double prix;
-  final double? prixPromo;
-  final double? discount;
+  final double? prixFinal; // Prix après réduction
   final List<String> images;
   final int stock;
   final String categorie;
+  final String categoryId;
   final bool disponible;
-  final double? rating;
-  final int? reviewCount;
-  final bool isActive;
+  final double? ratings;
+  final Map<String, dynamic>? reduction;
 
   Product({
     required this.id,
     required this.nom,
     required this.description,
     required this.prix,
-    this.prixPromo,
-    this.discount,
+    this.prixFinal,
     required this.images,
     required this.stock,
     required this.categorie,
+    required this.categoryId,
     required this.disponible,
-    this.rating,
-    this.reviewCount,
-    required this.isActive,
+    this.ratings,
+    this.reduction,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    String categoryName = 'Non catégorisé';
-    
-    // Gérer le cas où categoryId est un objet ou une chaîne
-    if (json['categoryId'] != null) {
-      if (json['categoryId'] is Map) {
-        categoryName = json['categoryId']['nom'] ?? 'Non catégorisé';
-      } else if (json['categoryId'] is String) {
-        categoryName = json['categoryId'];
-      }
+    // Obtenir le nom de la catégorie
+    String categorieName = '';
+    if (json['categoryId'] != null && json['categoryId']['nom'] != null) {
+      categorieName = json['categoryId']['nom'];
+    } else if (json['categoryId'] is String) {
+      // Mapper les IDs aux noms
+      final categoryMapping = {
+        'CAT1': 'Électronique',
+        'CAT2': 'Accessoires',
+        'CAT3': 'Informatique',
+        'CAT4': 'Wearables',
+        'CAT5': 'Audio',
+      };
+      categorieName = categoryMapping[json['categoryId']] ?? 'Autre';
     }
-    
+
     return Product(
       id: json['_id'] ?? '',
       nom: json['nom'] ?? '',
       description: json['description'] ?? '',
-      prix: json['prix']?.toDouble() ?? 0.0,
-      prixPromo: json['prixPromo']?.toDouble(),
-      discount: json['discount']?.toDouble(),
-      images: json['images'] != null 
-          ? List<String>.from(json['images'])
-          : [],
+      prix: (json['prix'] ?? 0).toDouble(),
+      prixFinal: json['prixFinal'] != null ? json['prixFinal'].toDouble() : null,
+      images: List<String>.from(json['images'] ?? []),
       stock: json['stock'] ?? 0,
-      categorie: categoryName,
+      categorie: categorieName,
+      categoryId: json['categoryId'] is Map ? json['categoryId']['_id'] : json['categoryId'] ?? '',
       disponible: json['stock'] > 0 && (json['isActive'] ?? true),
-      rating: json['rating']?.toDouble(),
-      reviewCount: json['reviewCount'],
-      isActive: json['isActive'] ?? true,
+      ratings: json['ratings']?.toDouble() ?? 0.0,
+      reduction: json['reduction'],
     );
   }
 
@@ -66,15 +66,12 @@ class Product {
       'nom': nom,
       'description': description,
       'prix': prix,
-      'prixPromo': prixPromo,
-      'discount': discount,
+      'prixFinal': prixFinal,
       'images': images,
       'stock': stock,
-      'categorie': categorie,
-      'disponible': disponible,
-      'rating': rating,
-      'reviewCount': reviewCount,
-      'isActive': isActive,
+      'categoryId': categoryId,
+      'isActive': disponible,
+      'ratings': ratings,
     };
   }
 
@@ -84,30 +81,28 @@ class Product {
     String? nom,
     String? description,
     double? prix,
-    double? prixPromo,
-    double? discount,
+    double? prixFinal,
     List<String>? images,
     int? stock,
     String? categorie,
+    String? categoryId,
     bool? disponible,
-    double? rating,
-    int? reviewCount,
-    bool? isActive,
+    double? ratings,
+    Map<String, dynamic>? reduction,
   }) {
     return Product(
       id: id ?? this.id,
       nom: nom ?? this.nom,
       description: description ?? this.description,
       prix: prix ?? this.prix,
-      prixPromo: prixPromo ?? this.prixPromo,
-      discount: discount ?? this.discount,
+      prixFinal: prixFinal ?? this.prixFinal,
       images: images ?? this.images,
       stock: stock ?? this.stock,
       categorie: categorie ?? this.categorie,
+      categoryId: categoryId ?? this.categoryId,
       disponible: disponible ?? this.disponible,
-      rating: rating ?? this.rating,
-      reviewCount: reviewCount ?? this.reviewCount,
-      isActive: isActive ?? this.isActive,
+      ratings: ratings ?? this.ratings,
+      reduction: reduction ?? this.reduction,
     );
   }
 } 

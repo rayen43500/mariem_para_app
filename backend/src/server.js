@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swaggers');
 require('dotenv').config();
 
 // Import des routes
@@ -18,6 +20,9 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Database connection
 mongoose.connect(process.env.DB_URL)
   .then(() => console.log('Connected to MongoDB'))
@@ -27,7 +32,7 @@ mongoose.connect(process.env.DB_URL)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/produits', productRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

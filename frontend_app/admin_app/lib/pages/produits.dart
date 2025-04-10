@@ -641,9 +641,9 @@ class _ProduitsPageState extends State<ProduitsPage> {
                         'prix': price,
                         'description': descriptionController.text,
                         'stock': stock,
-                        'categoryId': null, // À remplacer par l'ID réel de la catégorie
+                        'categorie': selectedCategory,
                         'images': imageUrl != null ? [imageUrl] : 
-                                  imageController.text.isNotEmpty ? [imageController.text] : [],
+                                  imageController.text.isNotEmpty ? [imageController.text] : ['https://picsum.photos/200/300'],
                         'isActive': isAvailable,
                       };
                       

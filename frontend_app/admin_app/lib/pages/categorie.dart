@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/category_service.dart';
+import 'package:flutter/foundation.dart';
 
 class CategoriePage extends StatefulWidget {
   const CategoriePage({super.key});
@@ -8,65 +10,112 @@ class CategoriePage extends StatefulWidget {
 }
 
 class _CategoriePageState extends State<CategoriePage> {
-  final _isLoading = false;
+  final CategoryService _categoryService = CategoryService();
+  bool _isLoading = true;
   String _searchQuery = '';
+  List<Map<String, dynamic>> _categories = [];
+  String? _errorMessage;
 
-  final List<Map<String, dynamic>> _categories = [
-    {
-      'id': 'CAT1',
-      'nom': 'Électronique',
-      'icon': Icons.devices,
-      'couleur': Colors.blue,
-      'produits': 35,
-      'description': 'Smartphones, tablettes et autres appareils électroniques',
-      'actif': true,
-    },
-    {
-      'id': 'CAT2',
-      'nom': 'Accessoires',
-      'icon': Icons.headphones,
-      'couleur': Colors.orange,
-      'produits': 48,
-      'description': 'Coques, chargeurs, écouteurs et autres accessoires',
-      'actif': true,
-    },
-    {
-      'id': 'CAT3',
-      'nom': 'Informatique',
-      'icon': Icons.computer,
-      'couleur': Colors.green,
-      'produits': 20,
-      'description': 'Ordinateurs portables, PC de bureau et périphériques',
-      'actif': true,
-    },
-    {
-      'id': 'CAT4',
-      'nom': 'Wearables',
-      'icon': Icons.watch,
-      'couleur': Colors.purple,
-      'produits': 12,
-      'description': 'Montres connectées et bracelets d\'activité',
-      'actif': true,
-    },
-    {
-      'id': 'CAT5',
-      'nom': 'Audio',
-      'icon': Icons.speaker,
-      'couleur': Colors.red,
-      'produits': 15,
-      'description': 'Enceintes, casques audio et systèmes audio',
-      'actif': true,
-    },
-    {
-      'id': 'CAT6',
-      'nom': 'Maison intelligente',
-      'icon': Icons.home,
-      'couleur': Colors.teal,
-      'produits': 8,
-      'description': 'Produits connectés pour la maison',
-      'actif': false,
-    },
-  ];
+  // Icônes pour les catégories
+  final Map<String, IconData> iconMap = {
+    'devices': Icons.devices,
+    'headphones': Icons.headphones,
+    'computer': Icons.computer,
+    'watch': Icons.watch,
+    'speaker': Icons.speaker,
+    'home': Icons.home,
+    'phone_android': Icons.phone_android,
+    'tv': Icons.tv,
+    'camera_alt': Icons.camera_alt,
+    'videogame_asset': Icons.videogame_asset,
+    'sports_esports': Icons.sports_esports,
+    'memory': Icons.memory,
+  };
+  
+  // Couleurs pour les catégories
+  final Map<String, Color> colorMap = {
+    'blue': Colors.blue,
+    'red': Colors.red,
+    'green': Colors.green,
+    'orange': Colors.orange,
+    'purple': Colors.purple,
+    'teal': Colors.teal,
+    'pink': Colors.pink,
+    'amber': Colors.amber,
+    'indigo': Colors.indigo,
+    'cyan': Colors.cyan,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final categoriesData = await _categoryService.getCategories();
+      
+      // Convertir les données du backend en format compatible avec l'interface
+      final List<Map<String, dynamic>> formattedCategories = [];
+      
+      for (var category in categoriesData) {
+        // Sélectionner une couleur par défaut basée sur le nom
+        final colorName = category['colorName'] ?? _getDefaultColorName(category['nom']);
+        final Color color = colorMap[colorName] ?? Colors.blue;
+        
+        // Sélectionner une icône par défaut basée sur le nom
+        final iconName = category['iconName'] ?? _getDefaultIconName(category['nom']);
+        final IconData icon = iconMap[iconName] ?? Icons.category;
+        
+        formattedCategories.add({
+          'id': category['_id'],
+          'nom': category['nom'],
+          'description': category['description'] ?? 'Aucune description',
+          'icon': icon,
+          'iconName': iconName,
+          'couleur': color,
+          'colorName': colorName,
+          'produits': category['productCount'] ?? 0,
+          'actif': category['isActive'] ?? true,
+          'slug': category['slug'],
+          'parentCategory': category['parentCategory'],
+        });
+      }
+      
+      setState(() {
+        _categories = formattedCategories;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erreur lors du chargement des catégories: $e');
+      }
+      setState(() {
+        _errorMessage = 'Impossible de charger les catégories. Veuillez réessayer.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Déterminer une couleur par défaut basée sur le nom de la catégorie
+  String _getDefaultColorName(String categoryName) {
+    final colorNames = colorMap.keys.toList();
+    final nameHash = categoryName.hashCode.abs() % colorNames.length;
+    return colorNames[nameHash];
+  }
+  
+  // Déterminer une icône par défaut basée sur le nom de la catégorie
+  String _getDefaultIconName(String categoryName) {
+    final iconNames = iconMap.keys.toList();
+    final nameHash = categoryName.hashCode.abs() % iconNames.length;
+    return iconNames[nameHash];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +133,13 @@ class _CategoriePageState extends State<CategoriePage> {
         title: const Text('Gestion des catégories'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadCategories,
+            tooltip: 'Actualiser',
+          ),
+        ],
         elevation: 0,
       ),
       body: Column(
@@ -113,41 +169,72 @@ class _CategoriePageState extends State<CategoriePage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : filteredCategories.isEmpty
+                : _errorMessage != null
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.category_outlined,
+                              Icons.error_outline,
                               size: 80,
-                              color: Colors.grey.shade400,
+                              color: Colors.red.shade300,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Aucune catégorie trouvée',
+                              _errorMessage!,
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.grey.shade600,
+                                color: Colors.red.shade400,
                               ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: _loadCategories,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Réessayer'),
                             ),
                           ],
                         ),
                       )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: isSmallScreen ? 1 : 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: isSmallScreen ? 2 : 1.5,
-                        ),
-                        itemCount: filteredCategories.length,
-                        itemBuilder: (context, index) {
-                          final category = filteredCategories[index];
-                          return _buildCategoryCard(category, theme);
-                        },
-                      ),
+                    : filteredCategories.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.category_outlined,
+                                  size: 80,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Aucune catégorie trouvée',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadCategories,
+                            child: GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isSmallScreen ? 1 : 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: isSmallScreen ? 2 : 1.5,
+                              ),
+                              itemCount: filteredCategories.length,
+                              itemBuilder: (context, index) {
+                                final category = filteredCategories[index];
+                                return _buildCategoryCard(category, theme);
+                              },
+                            ),
+                          ),
           ),
         ],
       ),
@@ -216,13 +303,11 @@ class _CategoriePageState extends State<CategoriePage> {
                       ),
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert),
-                        onSelected: (value) {
+                        onSelected: (value) async {
                           if (value == 'edit') {
                             _showAddEditCategoryDialog(context, category: category);
                           } else if (value == 'toggle') {
-                            setState(() {
-                              category['actif'] = !category['actif'];
-                            });
+                            await _toggleCategoryStatus(category);
                           } else if (value == 'delete') {
                             _showDeleteConfirmDialog(context, category);
                           }
@@ -309,6 +394,51 @@ class _CategoriePageState extends State<CategoriePage> {
     );
   }
 
+  Future<void> _toggleCategoryStatus(Map<String, dynamic> category) async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Appeler l'API pour changer le statut
+      await _categoryService.updateCategory(
+        category['id'],
+        {'actif': !category['actif']},
+      );
+      
+      // Mettre à jour localement
+      setState(() {
+        final index = _categories.indexWhere((c) => c['id'] == category['id']);
+        if (index != -1) {
+          _categories[index]['actif'] = !category['actif'];
+        }
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Catégorie ${category['nom']} ${category['actif'] ? 'désactivée' : 'activée'}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showCategoryDetailDialog(BuildContext context, Map<String, dynamic> category) {
     showDialog(
       context: context,
@@ -328,6 +458,21 @@ class _CategoriePageState extends State<CategoriePage> {
             const SizedBox(height: 4),
             Text(
               category['description'],
+              style: TextStyle(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Slug',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              category['slug'] ?? 'Non défini',
               style: TextStyle(
                 color: Colors.grey.shade600,
               ),
@@ -403,179 +548,218 @@ class _CategoriePageState extends State<CategoriePage> {
     final TextEditingController nameController = TextEditingController(text: isEditing ? category['nom'] : '');
     final TextEditingController descriptionController = TextEditingController(text: isEditing ? category['description'] : '');
     bool isActive = isEditing ? category['actif'] : true;
-    Color selectedColor = isEditing ? category['couleur'] : Colors.blue;
-    IconData selectedIcon = isEditing ? category['icon'] : Icons.category;
-
-    final List<Color> colorOptions = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-      Colors.indigo,
-      Colors.cyan,
-    ];
-
-    final List<IconData> iconOptions = [
-      Icons.devices,
-      Icons.headphones,
-      Icons.computer,
-      Icons.watch,
-      Icons.speaker,
-      Icons.home,
-      Icons.phone_android,
-      Icons.tv,
-      Icons.camera_alt,
-      Icons.videogame_asset,
-      Icons.sports_esports,
-      Icons.memory,
-    ];
+    String selectedColorName = isEditing ? (category['colorName'] ?? 'blue') : 'blue';
+    String selectedIconName = isEditing ? (category['iconName'] ?? 'category') : 'category';
+    
+    Color selectedColor = colorMap[selectedColorName] ?? Colors.blue;
+    IconData selectedIcon = iconMap[selectedIconName] ?? Icons.category;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Modifier la catégorie' : 'Ajouter une catégorie'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom de la catégorie',
-                  hintText: 'Ex: Électronique',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Ex: Smartphones, tablettes et autres appareils électroniques',
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              const Text('Couleur'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: colorOptions.map((color) {
-                  return InkWell(
-                    onTap: () {
-                      selectedColor = color;
-                    },
-                    child: CircleAvatar(
-                      backgroundColor: color,
-                      radius: 16,
-                      child: selectedColor == color
-                          ? const Icon(
-                              Icons.check,
-                              size: 18,
-                              color: Colors.white,
-                            )
-                          : null,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(isEditing ? 'Modifier la catégorie' : 'Ajouter une catégorie'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom de la catégorie',
+                      hintText: 'Ex: Électronique',
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              const Text('Icône'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: iconOptions.map((icon) {
-                  return InkWell(
-                    onTap: () {
-                      selectedIcon = icon;
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: selectedIcon == icon ? selectedColor.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: selectedIcon == icon
-                            ? Border.all(
-                                color: selectedColor,
-                                width: 2,
-                              )
-                            : null,
-                      ),
-                      child: Icon(
-                        icon,
-                        color: selectedIcon == icon ? selectedColor : Colors.grey,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Ex: Smartphones, tablettes et autres appareils électroniques',
                     ),
-                  );
-                }).toList(),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Couleur'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: colorMap.entries.map((entry) {
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedColorName = entry.key;
+                            selectedColor = entry.value;
+                          });
+                        },
+                        child: CircleAvatar(
+                          backgroundColor: entry.value,
+                          radius: 16,
+                          child: selectedColorName == entry.key
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 18,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Icône'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: iconMap.entries.map((entry) {
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedIconName = entry.key;
+                            selectedIcon = entry.value;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: selectedIconName == entry.key
+                                ? selectedColor.withOpacity(0.2)
+                                : Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: selectedIconName == entry.key
+                                ? Border.all(
+                                    color: selectedColor,
+                                    width: 2,
+                                  )
+                                : null,
+                          ),
+                          child: Icon(
+                            entry.value,
+                            color: selectedIconName == entry.key ? selectedColor : Colors.grey,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    title: const Text('Catégorie active'),
+                    value: isActive,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          isActive = value;
+                        });
+                      }
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                title: const Text('Catégorie active'),
-                value: isActive,
-                onChanged: (value) {
-                  if (value != null) {
-                    isActive = value;
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  // Valider et sauvegarder les changements
+                  final name = nameController.text.trim();
+                  final description = descriptionController.text.trim();
+                  
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Le nom de la catégorie est requis')),
+                    );
+                    return;
+                  }
+
+                  try {
+                    setState(() {
+                      _isLoading = true;
+                    });
+
+                    final categoryData = {
+                      'nom': name,
+                      'description': description,
+                      'iconName': selectedIconName,
+                      'colorName': selectedColorName,
+                      'actif': isActive,
+                    };
+
+                    if (isEditing) {
+                      // Mettre à jour la catégorie existante
+                      await _categoryService.updateCategory(category!['id'], categoryData);
+                      
+                      // Mettre à jour localement
+                      final index = _categories.indexWhere((c) => c['id'] == category['id']);
+                      if (index != -1) {
+                        _categories[index]['nom'] = name;
+                        _categories[index]['description'] = description;
+                        _categories[index]['iconName'] = selectedIconName;
+                        _categories[index]['icon'] = selectedIcon;
+                        _categories[index]['colorName'] = selectedColorName;
+                        _categories[index]['couleur'] = selectedColor;
+                        _categories[index]['actif'] = isActive;
+                      }
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Catégorie mise à jour avec succès')),
+                        );
+                      }
+                    } else {
+                      // Ajouter une nouvelle catégorie
+                      final newCategory = await _categoryService.createCategory(categoryData);
+                      
+                      // Ajouter à la liste locale
+                      _categories.add({
+                        'id': newCategory['_id'],
+                        'nom': name,
+                        'description': description,
+                        'iconName': selectedIconName,
+                        'icon': selectedIcon,
+                        'colorName': selectedColorName,
+                        'couleur': selectedColor,
+                        'produits': 0,
+                        'actif': isActive,
+                        'slug': newCategory['slug'],
+                      });
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Catégorie ajoutée avec succès')),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erreur: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } finally {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    Navigator.pop(context);
                   }
                 },
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
+                child: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Valider et sauvegarder les changements
-              final name = nameController.text.trim();
-              final description = descriptionController.text.trim();
-              
-              if (name.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Le nom de la catégorie est requis')),
-                );
-                return;
-              }
-
-              setState(() {
-                if (isEditing) {
-                  // Mettre à jour la catégorie existante
-                  category['nom'] = name;
-                  category['description'] = description;
-                  category['couleur'] = selectedColor;
-                  category['icon'] = selectedIcon;
-                  category['actif'] = isActive;
-                } else {
-                  // Ajouter une nouvelle catégorie
-                  _categories.add({
-                    'id': 'CAT${_categories.length + 1}',
-                    'nom': name,
-                    'description': description,
-                    'couleur': selectedColor,
-                    'icon': selectedIcon,
-                    'produits': 0,
-                    'actif': isActive,
-                  });
-                }
-              });
-              
-              Navigator.pop(context);
-            },
-            child: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -596,16 +780,44 @@ class _CategoriePageState extends State<CategoriePage> {
             child: const Text('Annuler'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _categories.removeWhere((item) => item['id'] == category['id']);
-              });
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Catégorie "${category['nom']}" supprimée'),
-                ),
-              );
+              
+              try {
+                setState(() {
+                  _isLoading = true;
+                });
+                
+                // Appeler l'API pour supprimer la catégorie
+                await _categoryService.deleteCategory(category['id']);
+                
+                // Mettre à jour localement
+                setState(() {
+                  _categories.removeWhere((item) => item['id'] == category['id']);
+                  _isLoading = false;
+                });
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Catégorie "${category['nom']}" supprimée'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                setState(() {
+                  _isLoading = false;
+                });
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
