@@ -1,64 +1,61 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Couleurs principales pour parapharmacie
-  static const Color primaryColor = Color(0xFF4CAF50);      // Vert médical
-  static const Color accentColor = Color(0xFF42A5F5);       // Bleu apaisant
-  static const Color secondaryColor = Color(0xFFF5F5F5);    // Gris très clair
-  static const Color darkGreenColor = Color(0xFF2E7D32);    // Vert foncé
-  static const Color lightGreenColor = Color(0xFFAED581);   // Vert clair
-  static const Color errorColor = Color(0xFFE53935);        // Rouge erreur
-
-  // Couleurs neutres
-  static const Color textColor = Color(0xFF424242);         // Gris foncé pour le texte
-  static const Color lightTextColor = Color(0xFF757575);    // Gris pour texte secondaire
-  static const Color backgroundColor = Color(0xFFFAFAFA);   // Fond presque blanc
-  static const Color cardColor = Colors.white;
-  static const Color dividerColor = Color(0xFFEEEEEE);
-
+  // Couleurs principales
+  static const Color primaryColor = Color(0xFF5C6BC0); // Indigo
+  static const Color secondaryColor = Color(0xFFF5F5F5); // Gris très clair
+  static const Color accentColor = Color(0xFF26A69A); // Vert-bleu
+  static const Color backgroundColor = Colors.white; // Fond blanc
+  static const Color errorColor = Colors.red; // Couleur d'erreur
+  
+  // Couleurs texte
+  static const Color darkTextColor = Color(0xFF212121); // Presque noir
+  static const Color lightTextColor = Color(0xFF757575); // Gris
+  
   // Styles de texte
-  static TextStyle get headingTextStyle => const TextStyle(
-    fontSize: 28.0,
+  static final TextStyle titleTextStyle = TextStyle(
+    fontSize: 18,
     fontWeight: FontWeight.bold,
-    color: textColor,
-    letterSpacing: 0.5,
+    color: darkTextColor,
   );
-
-  static TextStyle get titleTextStyle => const TextStyle(
-    fontSize: 22.0,
-    fontWeight: FontWeight.w600,
-    color: textColor,
-    letterSpacing: 0.3,
-  );
-
-  static TextStyle get subtitleTextStyle => const TextStyle(
-    fontSize: 18.0,
+  
+  static final TextStyle subtitleTextStyle = TextStyle(
+    fontSize: 16,
     fontWeight: FontWeight.w500,
-    color: textColor,
+    color: darkTextColor,
   );
-
-  static TextStyle get bodyTextStyle => const TextStyle(
-    fontSize: 16.0,
-    color: textColor,
+  
+  static final TextStyle bodyTextStyle = TextStyle(
+    fontSize: 14,
+    color: darkTextColor,
   );
-
-  static TextStyle get smallTextStyle => const TextStyle(
-    fontSize: 14.0,
+  
+  static final TextStyle captionTextStyle = TextStyle(
+    fontSize: 12,
     color: lightTextColor,
   );
-
-  // Style des boutons
-  static ButtonStyle get primaryButtonStyle => ElevatedButton.styleFrom(
+  
+  // Styles requis par login_screen.dart
+  static final TextStyle headingTextStyle = TextStyle(
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: darkTextColor,
+  );
+  
+  static final TextStyle smallTextStyle = TextStyle(
+    fontSize: 14,
+    color: lightTextColor,
+  );
+  
+  static final ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: primaryColor,
     foregroundColor: Colors.white,
-    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+    padding: EdgeInsets.symmetric(vertical: 16),
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(15),
     ),
-    elevation: 2,
   );
-
-  // Style des champs de texte
+  
   static InputDecoration textFieldDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -69,54 +66,84 @@ class AppTheme {
       ),
       filled: true,
       fillColor: secondaryColor,
-      labelStyle: const TextStyle(color: lightTextColor),
+      labelStyle: TextStyle(color: lightTextColor),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: primaryColor, width: 1.5),
+        borderSide: BorderSide(color: primaryColor, width: 1.5),
       ),
     );
   }
 
-  // Thème complet de l'application
-  static ThemeData get theme => ThemeData(
+  // Thème clair
+  static ThemeData lightTheme = ThemeData(
     primaryColor: primaryColor,
     colorScheme: ColorScheme.light(
       primary: primaryColor,
       secondary: accentColor,
-      error: errorColor,
+      surface: Colors.white,
+      background: secondaryColor,
+      error: Colors.red,
     ),
-    scaffoldBackgroundColor: backgroundColor,
-    cardTheme: const CardTheme(
-      color: cardColor,
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: primaryButtonStyle,
-    ),
-    textTheme: TextTheme(
-      displayLarge: headingTextStyle,
-      displayMedium: titleTextStyle,
-      bodyLarge: subtitleTextStyle,
-      bodyMedium: bodyTextStyle,
-      bodySmall: smallTextStyle,
-    ),
+    scaffoldBackgroundColor: Colors.white,
     appBarTheme: const AppBarTheme(
       backgroundColor: primaryColor,
-      elevation: 0,
-      centerTitle: true,
+      elevation: 1,
       foregroundColor: Colors.white,
     ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: primaryColor,
+      ),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Colors.white,
+      selectedItemColor: primaryColor,
+      unselectedItemColor: lightTextColor,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
+      ),
+    ),
+    cardTheme: CardTheme(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
     dividerTheme: const DividerThemeData(
-      color: dividerColor,
+      color: secondaryColor,
       thickness: 1,
-      space: 1,
+      indent: 16,
+      endIndent: 16,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: secondaryColor,
+      selectedColor: primaryColor.withOpacity(0.2),
+      labelStyle: TextStyle(color: darkTextColor),
+      secondaryLabelStyle: const TextStyle(color: Colors.white),
+      secondarySelectedColor: primaryColor,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     ),
   );
 } 
