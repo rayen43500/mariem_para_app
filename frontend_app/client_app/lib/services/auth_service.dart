@@ -56,12 +56,8 @@ class AuthService {
 
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
-        
-        // Sauvegarder le token et les informations utilisateur
-        await _storage.write(key: 'token', value: data['token']);
-        await _storage.write(key: 'refreshToken', value: data['refreshToken']);
-        await _storage.write(key: 'user', value: json.encode(data['user']));
-        
+        // Ne pas sauvegarder les tokens et infos utilisateur lors de l'inscription
+        // L'utilisateur devra se connecter manuellement
         return data;
       } else {
         final error = json.decode(response.body);

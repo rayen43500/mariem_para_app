@@ -45,7 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Inscription réussie!'),
+              content: const Text('Inscription réussie! Vous pouvez maintenant vous connecter'),
               backgroundColor: AppTheme.primaryColor,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -53,6 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           );
+          
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {

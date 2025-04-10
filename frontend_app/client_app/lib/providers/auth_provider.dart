@@ -80,22 +80,11 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> register(String email, String password, String name) async {
     try {
-      final response = await _authService.register(email, password, name);
-      
-      _token = response['token'];
-      _user = response['user'];
-      _isAuthenticated = true;
-
-      await _storage.write(key: 'token', value: _token);
-      await _storage.write(key: 'user', value: json.encode(_user));
-
-      notifyListeners();
+      await _authService.register(email, password, name);
+      // Ne pas connecter automatiquement l'utilisateur après l'inscription
+      // L'utilisateur devra se connecter manuellement
     } catch (e) {
-      _isAuthenticated = false;
-      _user = null;
-      _token = null;
-      notifyListeners();
-      rethrow;
+      throw Exception(e.toString());
     }
   }
 
