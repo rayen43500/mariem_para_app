@@ -25,6 +25,16 @@ const categorySchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  colorName: {
+    type: String,
+    enum: ['blue', 'red', 'green', 'orange', 'purple', 'teal', 'pink', 'amber', 'indigo', 'cyan'],
+    default: 'blue'
+  },
+  iconName: {
+    type: String,
+    enum: ['devices', 'headphones', 'computer', 'watch', 'speaker', 'home', 'phone_android', 'tv', 'camera_alt', 'videogame_asset', 'sports_esports', 'memory', 'category'],
+    default: 'category'
   }
 }, {
   timestamps: true
