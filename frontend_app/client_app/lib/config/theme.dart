@@ -1,8 +1,11 @@
+// Ce fichier est déprécié. Utilisez le fichier theme/app_theme.dart à la place.
+// Conservé pour maintenir la compatibilité avec les anciens appels.
+
 import 'package:flutter/material.dart';
 
 class AppTheme {
   // Couleurs principales
-  static const Color primaryColor = Color(0xFF4CAF50);     // Vert pharmacie
+  static const Color primaryColor = Color(0xFF5C6BC0);
   static const Color secondaryColor = Color(0xFFF5F7FA);   // Gris très clair
   static const Color accentColor = Color(0xFF2196F3);      // Bleu médical
   static const Color backgroundColor = Color(0xFFFFFFFF);  // Fond blanc
@@ -10,7 +13,7 @@ class AppTheme {
   
   // Couleurs de texte
   static const Color darkTextColor = Color(0xFF1E293B);    // Texte foncé
-  static const Color lightTextColor = Color(0xFF64748B);   // Texte secondaire
+  static const Color lightTextColor = Color(0xFF757575);   // Texte secondaire
   static const Color whiteTextColor = Color(0xFFFFFFFF);   // Texte blanc
   
   // Couleurs d'état
@@ -33,144 +36,14 @@ class AppTheme {
   static const double radiusLarge = 16.0;
   static const double radiusXLarge = 24.0;
 
-  // Thème clair
-  static final ThemeData lightTheme = ThemeData(
-    primaryColor: primaryColor,
-    scaffoldBackgroundColor: backgroundColor,
-    cardColor: cardColor,
-    colorScheme: ColorScheme.light(
-      primary: primaryColor,
-      secondary: accentColor,
-      background: backgroundColor,
-      surface: cardColor,
-      error: errorColor,
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      foregroundColor: whiteTextColor,
-      elevation: 0,
-      centerTitle: false,
-      titleTextStyle: TextStyle(
-        color: whiteTextColor,
-        fontSize: fontSizeLarge,
-        fontWeight: FontWeight.bold,
+  static ThemeData get lightTheme {
+    return ThemeData(
+      primaryColor: primaryColor,
+      colorScheme: const ColorScheme.light(
+        primary: primaryColor,
       ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        foregroundColor: whiteTextColor,
-        backgroundColor: primaryColor,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusMedium),
-        ),
-        textStyle: const TextStyle(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w600,
-        ),
-        elevation: 0,
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: primaryColor,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        textStyle: const TextStyle(
-          fontSize: fontSizeNormal,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: primaryColor,
-        side: const BorderSide(color: primaryColor, width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusMedium),
-        ),
-        textStyle: const TextStyle(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-    cardTheme: CardTheme(
-      color: cardColor,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radiusMedium),
-      ),
-      clipBehavior: Clip.antiAlias,
-    ),
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontSize: fontSizeXXLarge,
-        fontWeight: FontWeight.bold,
-        color: darkTextColor,
-      ),
-      displayMedium: TextStyle(
-        fontSize: fontSizeXLarge,
-        fontWeight: FontWeight.bold,
-        color: darkTextColor,
-      ),
-      titleLarge: TextStyle(
-        fontSize: fontSizeLarge,
-        fontWeight: FontWeight.bold,
-        color: darkTextColor,
-      ),
-      titleMedium: TextStyle(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w600,
-        color: darkTextColor,
-      ),
-      bodyLarge: TextStyle(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.normal,
-        color: darkTextColor,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: fontSizeNormal,
-        color: darkTextColor,
-      ),
-      bodySmall: TextStyle(
-        fontSize: fontSizeSmall,
-        color: lightTextColor,
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: secondaryColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide: const BorderSide(color: primaryColor, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusMedium),
-        borderSide: const BorderSide(color: errorColor, width: 1.5),
-      ),
-      labelStyle: const TextStyle(color: lightTextColor),
-      hintStyle: const TextStyle(color: lightTextColor),
-    ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: cardColor,
-      selectedItemColor: primaryColor,
-      unselectedItemColor: lightTextColor,
-      selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-      unselectedLabelStyle: TextStyle(fontSize: 12),
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-    ),
-  );
+    );
+  }
 
   // Styles de texte constants
   static const TextStyle headingTextStyle = TextStyle(

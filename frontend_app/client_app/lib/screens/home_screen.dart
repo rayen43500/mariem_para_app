@@ -9,6 +9,7 @@ import '../services/cart_service.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'category_screen.dart';
+import '../theme/app_theme.dart' as theme;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -189,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               accountEmail: Text(user?['email'] ?? ''),
               currentAccountPicture: CircleAvatar(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: const Color(0xFF5C6BC0),
                 child: Text(
                   (user?['nom'] ?? 'U')[0].toUpperCase(),
                   style: const TextStyle(
@@ -198,8 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
+              decoration: const BoxDecoration(
+                color: Color(0xFF5C6BC0),
               ),
             ),
             ListTile(
@@ -294,8 +295,8 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: AppTheme.lightTextColor,
+        selectedItemColor: const Color(0xFF5C6BC0),
+        unselectedItemColor: const Color(0xFF757575),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -340,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeTab() {
     return RefreshIndicator(
       onRefresh: _loadData,
-      color: AppTheme.primaryColor,
+      color: const Color(0xFF5C6BC0),
       child: Stack(
         children: [
           SingleChildScrollView(
@@ -362,8 +363,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: AppTheme.secondaryColor,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                            color: const Color(0xFFF5F7FF).withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8.0),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -374,13 +375,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.search, color: AppTheme.primaryColor),
+                              const Icon(Icons.search, color: Color(0xFF5C6BC0)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextField(
                                   decoration: const InputDecoration(
                                     hintText: 'Rechercher un produit...',
-                                    hintStyle: TextStyle(color: AppTheme.lightTextColor),
+                                    hintStyle: TextStyle(color: Color(0xFF757575)),
                                     border: InputBorder.none,
                                   ),
                                   onSubmitted: (value) {
@@ -398,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Bouton de rafraîchissement
                       IconButton(
                         icon: const Icon(Icons.refresh),
-                        color: AppTheme.primaryColor,
+                        color: const Color(0xFF5C6BC0),
                         onPressed: () {
                           _loadData();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -529,393 +530,476 @@ class _HomeScreenState extends State<HomeScreen> {
   // Widget pour la grille de catégories
   Widget _buildCategoriesGrid() {
     if (_categories.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: Text('Aucune catégorie disponible')),
+      return Container(
+        padding: const EdgeInsets.all(16.0),
+        alignment: Alignment.center,
+        child: Text(
+          'Aucune catégorie disponible',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14.0,
+          ),
+        ),
       );
     }
 
-    // Utiliser seulement les premières catégories (jusqu'à 6)
-    final displayCategories = _categories.length > 6 
-        ? _categories.sublist(0, 6) 
-        : _categories;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.85,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: displayCategories.length,
-      itemBuilder: (context, index) {
-        final category = displayCategories[index];
-        return _buildCategoryGridItem(category);
-      },
-    );
-  }
-
-  // Widget pour chaque élément de catégorie de la grille
-  Widget _buildCategoryGridItem(dynamic category) {
-    final String icon = category['iconName'] ?? 'category';
-    final String name = category['nom'] ?? 'Catégorie';
-    final String color = category['colorName'] ?? 'blue';
-    
-    return InkWell(
-      onTap: () {
-        if (category['_id'] != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CategoryScreen(
-                categoryId: category['_id'],
-                categoryName: name,
-              ),
-            ),
-          );
-        }
-      },
-      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 65,
-            height: 65,
-            decoration: BoxDecoration(
-              color: _getCategoryColor(color).withOpacity(0.15),
-              shape: BoxShape.circle,
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.85,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
             ),
-            child: Icon(
-              _getCategoryIcon(icon),
-              color: _getCategoryColor(color),
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget pour la grille des produits en vedette
-  Widget _buildFeaturedProductsGrid() {
-    if (_products.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 32),
-          child: Text('Aucun produit disponible'),
-        ),
-      );
-    }
-
-    // Limiter à 6 produits maximum
-    final displayProducts = _products.length > 6 
-        ? _products.sublist(0, 6) 
-        : _products;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.68,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 20,
-      ),
-      itemCount: displayProducts.length,
-      itemBuilder: (context, index) {
-        final product = displayProducts[index];
-        return _buildProductGridItem(product);
-      },
-    );
-  }
-
-  // Widget amélioré pour chaque produit dans la grille
-  Widget _buildProductGridItem(dynamic product) {
-    // Données du produit avec valeurs par défaut
-    final String name = product['nom'] ?? 'Produit sans nom';
-    final double price = (product['prix'] is num) ? product['prix'].toDouble() : 0.0;
-    final double discountPrice = (product['prixFinal'] is num) ? product['prixFinal'].toDouble() : price;
-    final List<dynamic> images = product['images'] is List ? product['images'] : [];
-    final String imageUrl = images.isNotEmpty ? images[0] : 'https://via.placeholder.com/150';
-    final bool hasDiscount = discountPrice < price;
-    final int stock = product['stock'] is num ? product['stock'] : 0;
-    
-    return GestureDetector(
-      onTap: () {
-        if (product['_id'] != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailScreen(productId: product['_id']),
-            ),
-          );
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
-              spreadRadius: 1,
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image du produit
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              child: Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: 1,
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                        ),
+            itemCount: _categories.length > 6 ? 6 : _categories.length,
+            itemBuilder: (context, index) {
+              final category = _categories[index];
+              final colorName = category['colorName'] ?? 'blue';
+              final iconName = category['iconName'] ?? 'category';
+              
+              Color cardColor = _getCategoryColor(colorName);
+              IconData iconData = _getCategoryIcon(iconName);
+              
+              return InkWell(
+                onTap: () => _navigateToCategoryScreen(category),
+                borderRadius: BorderRadius.circular(8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: cardColor.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ),
-                  // Badge promotion ou rupture
-                  if (hasDiscount || stock == 0)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: stock == 0 
-                              ? Colors.grey[800] 
-                              : AppTheme.errorColor,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          stock == 0 
-                              ? 'Rupture' 
-                              : '-${(((price - discountPrice) / price) * 100).round()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            
-            // Informations produit
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Nom du produit
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  // Prix
-                  Row(
-                    children: [
-                      Text(
-                        '$discountPrice DH',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: hasDiscount ? AppTheme.primaryColor : Colors.black,
-                        ),
-                      ),
-                      if (hasDiscount)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: Text(
-                            '$price DH',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w400,
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                        ),
                     ],
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        cardColor.withOpacity(0.9),
+                        cardColor.withOpacity(0.7)
+                      ],
+                    ),
                   ),
-                  
-                  // Bouton d'ajout au panier
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: stock > 0 ? () {
-                        // Logique d'ajout au panier
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('$name ajouté au panier')),
-                        );
-                      } : null,
-                      icon: const Icon(Icons.add_shopping_cart, size: 16),
-                      label: const Text('Ajouter'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
-                        side: const BorderSide(color: AppTheme.primaryColor),
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          shape: BoxShape.circle,
                         ),
-                        textStyle: const TextStyle(
-                          fontSize: 11,
+                        child: Icon(iconData, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        category['nom'] ?? 'Catégorie',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${category['productCount'] ?? '0'} produits',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              );
+            },
+          ),
+          if (_categories.length > 6)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: TextButton.icon(
+                onPressed: () {
+                  _navigateToAllCategories();
+                },
+                icon: const Icon(Icons.grid_view, size: 18),
+                label: const Text('Voir toutes les catégories'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
-
-  // Widget pour la bannière promotionnelle
-  Widget _buildPromotionBanner() {
-    if (_promotions.isEmpty) {
-      return const SizedBox.shrink();
+  
+  // Widget pour la grille de produits en vedette
+  Widget _buildFeaturedProductsGrid() {
+    if (_products.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16.0),
+        alignment: Alignment.center,
+        child: Text(
+          'Aucun produit disponible',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14.0,
+          ),
+        ),
+      );
     }
 
-    final promotion = _promotions[0];
-    final hasImage = promotion['image'] != null && promotion['image'].toString().isNotEmpty;
-    
-    return Container(
-      height: 160,
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    final featuredProducts = _products.take(4).toList();
+
+    return Column(
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 16,
           ),
-        ],
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.8),
-          ],
+          itemCount: featuredProducts.length,
+          itemBuilder: (context, index) {
+            final product = featuredProducts[index];
+            final isOnSale = product['prixPromo'] != null || product['prixFinal'] != null;
+            final hasStock = (product['stock'] ?? 0) > 0;
+            
+            return InkWell(
+              onTap: () => _navigateToProductDetail(product),
+              borderRadius: BorderRadius.circular(8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image et badge promos
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8.0),
+                            topRight: Radius.circular(8.0),
+                          ),
+                          child: _buildProductImage(product),
+                        ),
+                        if (isOnSale)
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF5252), // AccentColor
+                                borderRadius: BorderRadius.circular(4.0),
+                              ),
+                              child: const Text(
+                                'PROMO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (!hasStock)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(8.0),
+                                  topRight: Radius.circular(8.0),
+                                ),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE57373), // ErrorColor
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                  child: const Text(
+                                    'RUPTURE',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    // Informations produit
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product['nom'] ?? 'Produit',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          _buildPriceSection(product),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Image de fond (si disponible)
-          if (hasImage)
-            Opacity(
-              opacity: 0.4,
-              child: Image.network(
-                promotion['image'],
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(),
+        if (_products.length > 4)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: TextButton.icon(
+              onPressed: () {
+                _navigateToAllProducts();
+              },
+              icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+              label: const Text('Voir tous les produits'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
               ),
             ),
-          
-          // Contenu
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Titre de la promotion
-                Text(
-                  promotion['nom'] ?? 'Offre spéciale',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Description (si disponible)
-                if (promotion['description'] != null)
-                  Text(
-                    promotion['description'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                
-                const SizedBox(height: 16),
-                
-                // Bouton d'action
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedIndex = 2; // Aller à l'onglet promotions
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppTheme.primaryColor,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  ),
-                  child: const Text('Voir les offres'),
-                ),
-              ],
-            ),
           ),
-        ],
+      ],
+    );
+  }
+  
+  // Widget pour la construction de l'image d'un produit
+  Widget _buildProductImage(Map<String, dynamic> product) {
+    final imageUrls = product['images'] as List<dynamic>?;
+    final String imageUrl = imageUrls != null && imageUrls.isNotEmpty 
+      ? imageUrls.first.toString()
+      : 'https://via.placeholder.com/300x300?text=Produit';
+    
+    return SizedBox(
+      height: 140,
+      width: double.infinity,
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: const Color(0xFFF5F7FF),
+            child: const Center(
+              child: Icon(
+                Icons.image_not_supported_outlined,
+                color: Color(0xFF757575),
+                size: 40,
+              ),
+            ),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFFF5F7FF),
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+  
+  // Widget pour l'affichage des prix
+  Widget _buildPriceSection(Map<String, dynamic> product) {
+    // Extraire les prix de manière sécurisée
+    double regularPrice = 0.0;
+    final priceValue = _getProductPrice(product, 'prix');
+    if (priceValue != null) {
+      regularPrice = priceValue;
+    }
+    
+    // Calculer le prix final
+    double finalPrice = regularPrice;
+    final promoPrice = _getProductPrice(product, 'prixPromo');
+    final finalListedPrice = _getProductPrice(product, 'prixFinal');
+    
+    if (finalListedPrice != null) {
+      finalPrice = finalListedPrice;
+    } else if (promoPrice != null) {
+      finalPrice = promoPrice;
+    }
+    
+    final bool isOnSale = finalPrice < regularPrice;
+    final int discountPercent = isOnSale 
+        ? ((1 - (finalPrice / regularPrice)) * 100).round() 
+        : 0;
+    
+    return Row(
+      children: [
+        // Prix final
+        Text(
+          '${finalPrice.toStringAsFixed(2)} €',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Color(0xFF212121),
+          ),
+        ),
+        const SizedBox(width: 8),
+        
+        // Prix barré si promo
+        if (isOnSale)
+          Text(
+            '${regularPrice.toStringAsFixed(2)} €',
+            style: const TextStyle(
+              decoration: TextDecoration.lineThrough,
+              color: Color(0xFF757575),
+              fontSize: 12,
+            ),
+          ),
+        
+        // Pourcentage de réduction
+        if (isOnSale && discountPercent > 0)
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF5252).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '-$discountPercent%',
+                  style: const TextStyle(
+                    color: Color(0xFFFF5252),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+  
+  // Récupérer le prix d'un produit de manière sécurisée
+  double? _getProductPrice(Map<String, dynamic> product, String priceKey) {
+    final dynamic price = product[priceKey];
+    if (price == null) return null;
+    
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      try {
+        return double.parse(price);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+  
+  // Récupérer la couleur d'une catégorie
+  Color _getCategoryColor(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'red': return Colors.redAccent;
+      case 'blue': return Colors.blueAccent;
+      case 'green': return Colors.greenAccent[700]!;
+      case 'purple': return Colors.purpleAccent;
+      case 'orange': return Colors.orangeAccent;
+      case 'teal': return Colors.tealAccent[700]!;
+      case 'pink': return Colors.pinkAccent;
+      case 'amber': return Colors.amberAccent;
+      case 'indigo': return Colors.indigoAccent;
+      default: return const Color(0xFF5C6BC0); // primaryColor
+    }
+  }
+  
+  // Récupérer l'icône d'une catégorie
+  IconData _getCategoryIcon(String iconName) {
+    switch (iconName.toLowerCase()) {
+      case 'face': return Icons.face;
+      case 'medication': return Icons.medication;
+      case 'spa': return Icons.spa;
+      case 'fitness': return Icons.fitness_center;
+      case 'baby': return Icons.child_care;
+      case 'hygiene': return Icons.sanitizer;
+      case 'heart': return Icons.favorite;
+      case 'book': return Icons.menu_book;
+      default: return Icons.category;
+    }
+  }
+  
+  // Navigation vers l'écran de catégorie
+  void _navigateToCategoryScreen(Map<String, dynamic> category) {
+    // Implémenter la navigation vers l'écran de catégorie
+    print('Naviguer vers la catégorie: ${category['nom']}');
+  }
+  
+  // Navigation vers toutes les catégories
+  void _navigateToAllCategories() {
+    // Implémenter la navigation vers toutes les catégories
+    print('Naviguer vers toutes les catégories');
+  }
+  
+  // Navigation vers tous les produits
+  void _navigateToAllProducts() {
+    // Implémenter la navigation vers tous les produits
+    print('Naviguer vers tous les produits');
+  }
+  
+  // Navigation vers le détail d'un produit
+  void _navigateToProductDetail(Map<String, dynamic> product) {
+    // Implémenter la navigation vers le détail du produit
+    print('Naviguer vers le produit: ${product['nom']}');
   }
 
   Widget _buildCategoriesTab() {
@@ -924,19 +1008,26 @@ class _HomeScreenState extends State<HomeScreen> {
         // Titre et description
         Container(
           padding: const EdgeInsets.all(16.0),
-          color: AppTheme.secondaryColor.withOpacity(0.3),
+          color: const Color(0xFFF5F7FF).withOpacity(0.3),
           width: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Toutes nos catégories',
-                style: AppTheme.headingTextStyle,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF212121),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Parcourez nos différentes catégories de produits',
-                style: AppTheme.smallTextStyle.copyWith(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
               ),
             ],
           ),
@@ -985,11 +1076,11 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       },
-      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+      borderRadius: BorderRadius.circular(16.0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -1016,7 +1107,11 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Text(
               name,
-              style: AppTheme.subtitleTextStyle,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF212121),
+              ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1026,7 +1121,10 @@ class _HomeScreenState extends State<HomeScreen> {
               productCount == 1 
                   ? '1 produit' 
                   : '$productCount produits',
-              style: AppTheme.smallTextStyle,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF757575),
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1067,7 +1165,7 @@ class _HomeScreenState extends State<HomeScreen> {
       clipBehavior: Clip.antiAlias,
       elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        borderRadius: BorderRadius.circular(16.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1079,9 +1177,9 @@ class _HomeScreenState extends State<HomeScreen> {
               imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: const Color(0xFF5C6BC0).withOpacity(0.1),
                 child: const Center(
-                  child: Icon(Icons.image_not_supported, size: 50, color: AppTheme.lightTextColor),
+                  child: Icon(Icons.image_not_supported, size: 50, color: Color(0xFF757575)),
                 ),
               ),
             ),
@@ -1109,8 +1207,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.errorColor,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                          color: const Color(0xFFE57373),
+                          borderRadius: BorderRadius.circular(4.0),
                         ),
                         child: Text(
                           '-$reduction%',
@@ -1128,8 +1226,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: TextStyle(
-                      color: AppTheme.lightTextColor,
+                    style: const TextStyle(
+                      color: Color(0xFF757575),
                       fontSize: 14,
                     ),
                   ),
@@ -1141,13 +1239,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (endDate != null) ...[
                   Row(
                     children: [
-                      const Icon(Icons.event, size: 16, color: AppTheme.lightTextColor),
+                      const Icon(Icons.event, size: 16, color: Color(0xFF757575)),
                       const SizedBox(width: 4),
                       Text(
                         'Valable jusqu\'au ${_formatDate(endDate)}',
                         style: const TextStyle(
                           fontSize: 13,
-                          color: AppTheme.lightTextColor,
+                          color: Color(0xFF757575),
                         ),
                       ),
                     ],
@@ -1161,9 +1259,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.secondaryColor,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                      border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                      color: const Color(0xFFF5F7FF),
+                      borderRadius: BorderRadius.circular(8.0),
+                      border: Border.all(color: const Color(0xFF5C6BC0).withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
@@ -1261,29 +1359,106 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Color _getCategoryColor(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'red': return Colors.red;
-      case 'green': return Colors.green;
-      case 'blue': return Colors.blue;
-      case 'purple': return Colors.purple;
-      case 'orange': return Colors.orange;
-      case 'teal': return Colors.teal;
-      default: return AppTheme.primaryColor;
+  // Widget pour la bannière promotionnelle
+  Widget _buildPromotionBanner() {
+    if (_promotions.isEmpty) {
+      return const SizedBox.shrink();
     }
-  }
 
-  IconData _getCategoryIcon(String iconName) {
-    switch (iconName.toLowerCase()) {
-      case 'medication': return Icons.medication;
-      case 'face': return Icons.face;
-      case 'fitness': return Icons.fitness_center;
-      case 'spa': return Icons.spa;
-      case 'baby': return Icons.child_care;
-      case 'hygiene': return Icons.cleaning_services;
-      case 'watch': return Icons.watch;
-      case 'category': return Icons.category;
-      default: return Icons.local_pharmacy;
-    }
+    final promotion = _promotions[0];
+    final hasImage = promotion['image'] != null && promotion['image'].toString().isNotEmpty;
+    
+    return Container(
+      height: 160,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5C6BC0).withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF5C6BC0),
+            Color(0xFF8E99F3),
+          ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image de fond (si disponible)
+          if (hasImage)
+            Opacity(
+              opacity: 0.4,
+              child: Image.network(
+                promotion['image'],
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(),
+              ),
+            ),
+          
+          // Contenu
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Titre de la promotion
+                Text(
+                  promotion['nom'] ?? 'Offre spéciale',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Description (si disponible)
+                if (promotion['description'] != null)
+                  Text(
+                    promotion['description'],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                
+                const SizedBox(height: 16),
+                
+                // Bouton d'action
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedIndex = 2; // Aller à l'onglet promotions
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF5C6BC0),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                  child: const Text('Voir les offres'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 } 
