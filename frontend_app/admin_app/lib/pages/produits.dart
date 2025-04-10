@@ -686,8 +686,16 @@ class _ProduitsPageState extends State<ProduitsPage> {
                 ElevatedButton(
                   onPressed: () async {
                     try {
+                      // Afficher un indicateur de chargement
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(child: CircularProgressIndicator()),
+                      );
+                      
                       // Vérifier que le formulaire est valide
                       if (nameController.text.trim().isEmpty) {
+                        Navigator.pop(context); // Fermer l'indicateur de chargement
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Le nom du produit est requis')),
                         );
@@ -695,6 +703,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       }
                       
                       if (selectedCategoryId == null || selectedCategoryId!.isEmpty) {
+                        Navigator.pop(context); // Fermer l'indicateur de chargement
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Veuillez sélectionner une catégorie')),
                         );
@@ -705,7 +714,10 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       String? imageUrl;
                       if (_selectedImage != null) {
                         imageUrl = await _uploadSelectedImage();
-                        if (imageUrl == null) return; // Échec du téléchargement
+                        if (imageUrl == null) {
+                          Navigator.pop(context); // Fermer l'indicateur de chargement
+                          return; // Échec du téléchargement
+                        }
                       }
                       
                       final double price = double.tryParse(priceController.text) ?? 0.0;
@@ -720,6 +732,11 @@ class _ProduitsPageState extends State<ProduitsPage> {
                         'images': imageUrl != null ? [imageUrl] : 
                                   imageController.text.isNotEmpty ? [imageController.text] : ['https://via.placeholder.com/400x300?text=Produit'],
                         'isActive': isAvailable,
+                        'stockAlerte': 5, // Valeur par défaut
+                        'notifications': {
+                          'stockFaible': true,
+                          'stockVide': true
+                        }
                       };
                       
                       if (isEditing) {
@@ -727,14 +744,24 @@ class _ProduitsPageState extends State<ProduitsPage> {
                         await _productService.updateProduct(product.id, productData);
                       } else {
                         // Créer un nouveau produit
-                        await _productService.createProduct(productData);
+                        final newProduct = await _productService.createProduct(productData);
+                        _logger.i('Nouveau produit créé: ${newProduct['_id']}');
+                      }
+                      
+                      // Fermer l'indicateur de chargement
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      
+                      // Fermer la boîte de dialogue
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
                       }
                       
                       // Recharger les produits
-                      _loadProducts();
+                      await _loadProducts();
                       
                       if (mounted) {
-                        Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -742,15 +769,27 @@ class _ProduitsPageState extends State<ProduitsPage> {
                                   ? 'Produit mis à jour avec succès'
                                   : 'Produit ajouté avec succès',
                             ),
+                            backgroundColor: Colors.green,
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       }
                     } catch (e) {
+                      // Fermer l'indicateur de chargement en cas d'erreur
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                      
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Erreur: $e')),
+                          SnackBar(
+                            content: Text('Erreur: $e'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
                       }
+                      
+                      _logger.e('Erreur lors de l\'ajout/modification du produit: $e');
                     }
                   },
                   child: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),

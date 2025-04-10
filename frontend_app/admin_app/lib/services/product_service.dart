@@ -33,8 +33,8 @@ class ProductService {
       if (sortBy != null && sortBy.isNotEmpty) queryParams['sortBy'] = sortBy;
       if (sortOrder != null && sortOrder.isNotEmpty) queryParams['sortOrder'] = sortOrder;
 
-      final uri = Uri.parse('$baseUrl/products').replace(queryParameters: queryParams);
-      _logger.i('Fetching products: $uri');
+      final uri = Uri.parse('$baseUrl/api/produits').replace(queryParameters: queryParams);
+      _logger.i('Récupération des produits: $uri');
 
       final response = await http.get(
         uri,
@@ -46,15 +46,15 @@ class ProductService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        _logger.i('Products fetched successfully. Total: ${data['total']}');
+        _logger.i('Produits récupérés avec succès. Total: ${data['total']}');
         return data;
       } else {
         final error = json.decode(response.body)['message'] ?? 'Une erreur est survenue';
-        _logger.e('Error fetching products: ${response.statusCode} - $error');
+        _logger.e('Erreur lors de la récupération des produits: ${response.statusCode} - $error');
         throw Exception(error);
       }
     } catch (e) {
-      _logger.e('Exception in getProducts: $e');
+      _logger.e('Exception dans getProducts: $e');
       rethrow;
     }
   }
@@ -506,7 +506,7 @@ class ProductService {
     }
   }
 
-  // Ajouter la méthode pour supprimer un produit
+  // Supprimer un produit
   Future<void> deleteProduct(String productId) async {
     try {
       final token = await _authService.getToken();
@@ -514,10 +514,10 @@ class ProductService {
         throw Exception('Utilisateur non authentifié');
       }
 
-      _logger.i('Deleting product: $productId');
+      _logger.i('Suppression du produit: $productId');
 
       final response = await http.delete(
-        Uri.parse('$baseUrl/products/$productId'),
+        Uri.parse('$baseUrl/api/produits/$productId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -525,14 +525,14 @@ class ProductService {
       );
 
       if (response.statusCode == 200) {
-        _logger.i('Product deleted successfully');
+        _logger.i('Produit supprimé avec succès');
       } else {
         final error = json.decode(response.body)['message'] ?? 'Une erreur est survenue';
-        _logger.e('Error deleting product: ${response.statusCode} - $error');
+        _logger.e('Erreur lors de la suppression du produit: ${response.statusCode} - $error');
         throw Exception(error);
       }
     } catch (e) {
-      _logger.e('Exception in deleteProduct: $e');
+      _logger.e('Exception dans deleteProduct: $e');
       rethrow;
     }
   }
