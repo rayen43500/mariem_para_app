@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../services/auth_service.dart';
+import '../services/dashboard_service.dart';
 import 'dart:math';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -12,82 +13,32 @@ class AdminDashboardPage extends StatefulWidget {
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
+  final _dashboardService = DashboardService();
   final _logger = Logger();
+  
   Map<String, dynamic>? _user;
   bool _isLoading = true;
+  bool _isLoadingStats = true;
+  Map<String, dynamic> _dashboardStats = {
+    'produits': 0,
+    'categories': 0,
+    'commandes': 0,
+    'utilisateurs': 0,
+    'promotions': 0,
+  };
+  
   late AnimationController _animationController;
   late Animation<double> _animation;
-  final List<CardItem> _cardItems = [
-    CardItem(
-      title: 'Produits',
-      icon: Icons.shopping_bag_outlined,
-      color: const Color(0xFF4A6FFF),
-      secondaryColor: const Color(0xFF84A9FF),
-      route: '/products',
-      count: '124',
-      description: 'Gérez votre catalogue',
-    ),
-    CardItem(
-      title: 'Commandes',
-      icon: Icons.shopping_cart_outlined,
-      color: const Color(0xFF36B37E),
-      secondaryColor: const Color(0xFF79F2C0),
-      route: '/orders',
-      count: '26',
-      description: 'Suivi des commandes',
-    ),
-    CardItem(
-      title: 'Utilisateurs',
-      icon: Icons.people_outline,
-      color: const Color(0xFFFF5630),
-      secondaryColor: const Color(0xFFFFAB99),
-      route: '/users',
-      count: '432',
-      description: 'Gestion des comptes',
-    ),
-    CardItem(
-      title: 'Statistiques',
-      icon: Icons.insert_chart_outlined,
-      color: const Color(0xFF6554C0),
-      secondaryColor: const Color(0xFFB8ACF6),
-      route: '/stats',
-      count: '',
-      description: 'Analyses des ventes',
-    ),
-    CardItem(
-      title: 'Livreurs',
-      icon: Icons.delivery_dining_outlined,
-      color: const Color(0xFF00B8D9),
-      secondaryColor: const Color(0xFF8FDFF6),
-      route: '/delivery',
-      count: '18',
-      description: 'Gestion des livreurs',
-    ),
-    CardItem(
-      title: 'Promotions',
-      icon: Icons.local_offer_outlined,
-      color: const Color(0xFFFF8B00),
-      secondaryColor: const Color(0xFFFFD580),
-      route: '/promotions',
-      count: '9',
-      description: 'Codes promos & offres',
-    ),
-    CardItem(
-      title: 'Catégories',
-      icon: Icons.category_outlined,
-      color: const Color(0xFF7A0BC0),
-      secondaryColor: const Color(0xFFC87DFF),
-      route: '/categories',
-      count: '6',
-      description: 'Gestion des catégories',
-    ),
-  ];
+  
+  late List<CardItem> _cardItems;
 
   @override
   void initState() {
     super.initState();
+    _initCardItems();
     _checkAuth();
     _testAuthentication();
+    _loadDashboardStats();
     
     _animationController = AnimationController(
       vsync: this,
@@ -100,6 +51,74 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     );
     
     _animationController.forward();
+  }
+  
+  void _initCardItems() {
+    _cardItems = [
+      CardItem(
+        title: 'Produits',
+        icon: Icons.shopping_bag_outlined,
+        color: const Color(0xFF4A6FFF),
+        secondaryColor: const Color(0xFF84A9FF),
+        route: '/products',
+        count: '...',
+        description: 'Gérez votre catalogue',
+      ),
+      CardItem(
+        title: 'Commandes',
+        icon: Icons.shopping_cart_outlined,
+        color: const Color(0xFF36B37E),
+        secondaryColor: const Color(0xFF79F2C0),
+        route: '/orders',
+        count: '...',
+        description: 'Suivi des commandes',
+      ),
+      CardItem(
+        title: 'Utilisateurs',
+        icon: Icons.people_outline,
+        color: const Color(0xFFFF5630),
+        secondaryColor: const Color(0xFFFFAB99),
+        route: '/users',
+        count: '...',
+        description: 'Gestion des comptes',
+      ),
+      CardItem(
+        title: 'Statistiques',
+        icon: Icons.insert_chart_outlined,
+        color: const Color(0xFF6554C0),
+        secondaryColor: const Color(0xFFB8ACF6),
+        route: '/stats',
+        count: '',
+        description: 'Analyses des ventes',
+      ),
+      CardItem(
+        title: 'Livreurs',
+        icon: Icons.delivery_dining_outlined,
+        color: const Color(0xFF00B8D9),
+        secondaryColor: const Color(0xFF8FDFF6),
+        route: '/delivery',
+        count: '...',
+        description: 'Gestion des livreurs',
+      ),
+      CardItem(
+        title: 'Promotions',
+        icon: Icons.local_offer_outlined,
+        color: const Color(0xFFFF8B00),
+        secondaryColor: const Color(0xFFFFD580),
+        route: '/promotions',
+        count: '...',
+        description: 'Codes promos & offres',
+      ),
+      CardItem(
+        title: 'Catégories',
+        icon: Icons.category_outlined,
+        color: const Color(0xFF7A0BC0),
+        secondaryColor: const Color(0xFFC87DFF),
+        route: '/categories',
+        count: '...',
+        description: 'Gestion des catégories',
+      ),
+    ];
   }
 
   @override
@@ -122,6 +141,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       _user = user;
       _isLoading = false;
     });
+  }
+  
+  Future<void> _loadDashboardStats() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+    
+    try {
+      final stats = await _dashboardService.getDashboardStats();
+      
+      // Mettre à jour les nombres de chaque catégorie
+      setState(() {
+        _dashboardStats = stats;
+        _updateCardItems();
+        _isLoadingStats = false;
+      });
+      
+    } catch (e) {
+      _logger.e('Erreur lors du chargement des statistiques: $e');
+      setState(() {
+        _isLoadingStats = false;
+      });
+    }
+  }
+  
+  void _updateCardItems() {
+    // Mettre à jour les nombres dans les cartes
+    for (int i = 0; i < _cardItems.length; i++) {
+      final item = _cardItems[i];
+      
+      if (item.title == 'Produits') {
+        item.count = _dashboardStats['produits'].toString();
+      } else if (item.title == 'Catégories') {
+        item.count = _dashboardStats['categories'].toString();
+      } else if (item.title == 'Commandes') {
+        item.count = _dashboardStats['commandes'].toString();
+      } else if (item.title == 'Utilisateurs') {
+        item.count = _dashboardStats['utilisateurs'].toString();
+      } else if (item.title == 'Promotions') {
+        item.count = _dashboardStats['promotions'].toString();
+      }
+    }
   }
 
   Future<void> _testAuthentication() async {
@@ -231,7 +292,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
                                 fontSize: isSmallScreen ? 20 : 24,
                               ),
                             ),
-                            _buildDateChip(theme, isSmallScreen),
+                            Row(
+                              children: [
+                                if (_isLoadingStats)
+                                  const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.refresh),
+                                  onPressed: _loadDashboardStats,
+                                  tooltip: 'Actualiser les statistiques',
+                                ),
+                                const SizedBox(width: 8),
+                                _buildDateChip(theme, isSmallScreen),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -689,7 +767,7 @@ class CardItem {
   final Color color;
   final Color secondaryColor;
   final String route;
-  final String count;
+  String count;
   final String description;
 
   CardItem({
