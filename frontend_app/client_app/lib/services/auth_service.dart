@@ -15,7 +15,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
-          'password': password,
+          'motDePasse': password,
         }),
       );
 
@@ -43,20 +43,32 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(String email, String password, String name) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'email': email,
-        'password': password,
-        'name': name,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'motDePasse': password,
+          'nom': name,
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to register: ${response.body}');
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        
+        // Sauvegarder le token et les informations utilisateur
+        await _storage.write(key: 'token', value: data['token']);
+        await _storage.write(key: 'refreshToken', value: data['refreshToken']);
+        await _storage.write(key: 'user', value: json.encode(data['user']));
+        
+        return data;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Erreur lors de l\'inscription');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de l\'inscription: ${e.toString()}');
     }
   }
 
