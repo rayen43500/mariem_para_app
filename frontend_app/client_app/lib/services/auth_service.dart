@@ -88,7 +88,28 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: 'token');
+    try {
+      final token = await _storage.read(key: 'token');
+      print('Token récupéré: ${token ?? "null"}');
+      
+      if (token == null) {
+        print('Aucun token trouvé dans le stockage');
+        return null;
+      }
+      
+      // Vérifier si le token a un format valide (structure JWT basique)
+      if (!token.contains('.') || token.split('.').length != 3) {
+        print('Format de token invalide: $token');
+        // Supprimer le token invalide
+        await _storage.delete(key: 'token');
+        return null;
+      }
+      
+      return token;
+    } catch (e) {
+      print('Erreur lors de la récupération du token: $e');
+      return null;
+    }
   }
 
   Future<String?> getRefreshToken() async {
