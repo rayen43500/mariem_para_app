@@ -1,62 +1,127 @@
+// Modèle de produit
 class Product {
   final String id;
   final String nom;
-  final String description;
   final double prix;
-  final double? prixFinal; // Prix après réduction
-  final List<String> images;
   final int stock;
-  final String categorie;
-  final String categoryId;
+  final String description;
+  final List<String> images;
+  final String categorie; // Nom de la catégorie
+  final String? categorieId; // ID de la catégorie
   final bool disponible;
-  final double? ratings;
-  final Map<String, dynamic>? reduction;
+  final double? prixPromo;
+  final double? reduction;
 
   Product({
     required this.id,
     required this.nom,
-    required this.description,
     required this.prix,
-    this.prixFinal,
-    required this.images,
     required this.stock,
+    required this.description,
+    required this.images,
     required this.categorie,
-    required this.categoryId,
+    this.categorieId,
     required this.disponible,
-    this.ratings,
+    this.prixPromo,
     this.reduction,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    // Obtenir le nom de la catégorie
-    String categorieName = '';
-    if (json['categoryId'] != null && json['categoryId']['nom'] != null) {
-      categorieName = json['categoryId']['nom'];
-    } else if (json['categoryId'] is String) {
-      // Mapper les IDs aux noms
-      final categoryMapping = {
-        'CAT1': 'Électronique',
-        'CAT2': 'Accessoires',
-        'CAT3': 'Informatique',
-        'CAT4': 'Wearables',
-        'CAT5': 'Audio',
-      };
-      categorieName = categoryMapping[json['categoryId']] ?? 'Autre';
-    }
+    final product = Product(
+      id: json['_id'] ?? '',
+      nom: json['nom'] ?? '',
+      prix: (json['prix'] ?? 0.0).toDouble(),
+      stock: json['stock'] ?? 0,
+      description: json['description'] ?? '',
+      images: (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      categorie: json['categoryId'] is Map ? json['categoryId']['nom'] ?? 'Non catégorisé' : 'Non catégorisé',
+      categorieId: json['categoryId'] is Map ? json['categoryId']['_id'] ?? null : json['categoryId']?.toString(),
+      disponible: json['isActive'] ?? false && (json['stock'] ?? 0) > 0,
+      prixPromo: json['prixPromo'] != null ? json['prixPromo'].toDouble() : null,
+      reduction: json['reduction'] != null ? json['reduction'].toDouble() : null,
+    );
+    
+    return product;
+  }
 
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'nom': nom,
+      'prix': prix,
+      'stock': stock,
+      'description': description,
+      'images': images,
+      'categoryId': categorieId,
+      'categorie': categorie,
+      'isActive': disponible,
+      'prixPromo': prixPromo,
+      'reduction': reduction,
+    };
+  }
+
+  // Copier avec des modifications
+  Product copyWith({
+    String? id,
+    String? nom,
+    double? prix,
+    int? stock,
+    String? description,
+    List<String>? images,
+    String? categorie,
+    String? categorieId,
+    bool? disponible,
+    double? prixPromo,
+    double? reduction,
+  }) {
     return Product(
+      id: id ?? this.id,
+      nom: nom ?? this.nom,
+      prix: prix ?? this.prix,
+      stock: stock ?? this.stock,
+      description: description ?? this.description,
+      images: images ?? this.images,
+      categorie: categorie ?? this.categorie,
+      categorieId: categorieId ?? this.categorieId,
+      disponible: disponible ?? this.disponible,
+      prixPromo: prixPromo ?? this.prixPromo,
+      reduction: reduction ?? this.reduction,
+    );
+  }
+}
+
+// Modèle de catégorie
+class Category {
+  final String id;
+  final String nom;
+  final String description;
+  final String slug;
+  final bool isActive;
+  final String? colorName;
+  final String? iconName;
+  final int? productCount;
+
+  Category({
+    required this.id,
+    required this.nom,
+    required this.description,
+    required this.slug,
+    required this.isActive,
+    this.colorName,
+    this.iconName,
+    this.productCount,
+  });
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
       id: json['_id'] ?? '',
       nom: json['nom'] ?? '',
       description: json['description'] ?? '',
-      prix: (json['prix'] ?? 0).toDouble(),
-      prixFinal: json['prixFinal'] != null ? json['prixFinal'].toDouble() : null,
-      images: List<String>.from(json['images'] ?? []),
-      stock: json['stock'] ?? 0,
-      categorie: categorieName,
-      categoryId: json['categoryId'] is Map ? json['categoryId']['_id'] : json['categoryId'] ?? '',
-      disponible: json['stock'] > 0 && (json['isActive'] ?? true),
-      ratings: json['ratings']?.toDouble() ?? 0.0,
-      reduction: json['reduction'],
+      slug: json['slug'] ?? '',
+      isActive: json['isActive'] ?? true,
+      colorName: json['colorName'],
+      iconName: json['iconName'],
+      productCount: json['productCount'] != null ? int.tryParse(json['productCount'].toString()) : null,
     );
   }
 
@@ -65,44 +130,11 @@ class Product {
       '_id': id,
       'nom': nom,
       'description': description,
-      'prix': prix,
-      'prixFinal': prixFinal,
-      'images': images,
-      'stock': stock,
-      'categoryId': categoryId,
-      'isActive': disponible,
-      'ratings': ratings,
+      'slug': slug,
+      'isActive': isActive,
+      'colorName': colorName,
+      'iconName': iconName,
+      'productCount': productCount,
     };
-  }
-
-  // Copier avec des modifications
-  Product copyWith({
-    String? id,
-    String? nom,
-    String? description,
-    double? prix,
-    double? prixFinal,
-    List<String>? images,
-    int? stock,
-    String? categorie,
-    String? categoryId,
-    bool? disponible,
-    double? ratings,
-    Map<String, dynamic>? reduction,
-  }) {
-    return Product(
-      id: id ?? this.id,
-      nom: nom ?? this.nom,
-      description: description ?? this.description,
-      prix: prix ?? this.prix,
-      prixFinal: prixFinal ?? this.prixFinal,
-      images: images ?? this.images,
-      stock: stock ?? this.stock,
-      categorie: categorie ?? this.categorie,
-      categoryId: categoryId ?? this.categoryId,
-      disponible: disponible ?? this.disponible,
-      ratings: ratings ?? this.ratings,
-      reduction: reduction ?? this.reduction,
-    );
   }
 } 

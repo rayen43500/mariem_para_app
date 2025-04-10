@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../services/auth_service.dart';
 import '../services/product_service.dart';
 import '../services/image_service.dart';
+import '../services/category_service.dart';
 import '../models/product_model.dart';
 import 'dart:async';
 
@@ -18,17 +19,20 @@ class _ProduitsPageState extends State<ProduitsPage> {
   final _authService = AuthService();
   final _productService = ProductService();
   final _imageService = ImageService();
+  final _categoryService = CategoryService();
   final _logger = Logger();
   
   bool _isLoading = true;
+  bool _isCategoriesLoading = true;
   List<Product> _produits = [];
+  List<Category> _categories = [];
   Map<String, dynamic>? _pagination;
   
   // Filtres et tri
   String _searchQuery = '';
-  String _selectedCategorie = 'Toutes';
-  final List<String> _categories = ['Toutes', 'Électronique', 'Accessoires', 'Informatique', 'Wearables', 'Audio'];
-
+  String? _selectedCategoryId;
+  String _selectedCategoryName = 'Toutes';
+  
   // Pour la gestion des images
   File? _selectedImage;
   bool _isUploadingImage = false;
@@ -37,7 +41,36 @@ class _ProduitsPageState extends State<ProduitsPage> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _loadCategories().then((_) => _loadProducts());
+  }
+  
+  // Charger les catégories depuis la base de données
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isCategoriesLoading = true;
+    });
+
+    try {
+      final data = await _categoryService.getCategories();
+      final List<Category> categories = data
+          .map((item) => Category.fromJson(item))
+          .toList();
+          
+      // Filtrer seulement les catégories actives
+      categories.removeWhere((category) => !category.isActive);
+      
+      setState(() {
+        _categories = categories;
+        _isCategoriesLoading = false;
+      });
+      
+      _logger.i('Catégories chargées: ${_categories.length}');
+    } catch (e) {
+      _logger.e('Erreur lors du chargement des catégories: $e');
+      setState(() {
+        _isCategoriesLoading = false;
+      });
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -47,7 +80,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
 
     try {
       final response = await _productService.getProducts(
-        category: _selectedCategorie == 'Toutes' ? null : _selectedCategorie,
+        category: _selectedCategoryId,
         limit: 20,
       );
       
@@ -83,8 +116,9 @@ class _ProduitsPageState extends State<ProduitsPage> {
 
   Future<void> _deleteProduct(String id) async {
     try {
-      // Ici, appeler l'API pour supprimer le produit
-      // Pour l'instant, on simule la suppression localement
+      // Appeler l'API pour supprimer le produit
+      await _productService.deleteProduct(id);
+      
       setState(() {
         _produits.removeWhere((product) => product.id == id);
       });
@@ -149,8 +183,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
   Widget build(BuildContext context) {
     final filteredProduits = _produits.where((product) {
       final matchesSearch = product.nom.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategorie == 'Toutes' || product.categorie == _selectedCategorie;
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     }).toList();
 
     final size = MediaQuery.of(context).size;
@@ -199,40 +232,66 @@ class _ProduitsPageState extends State<ProduitsPage> {
                   },
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      final category = _categories[index];
-                      final isSelected = category == _selectedCategorie;
-                      
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() {
-                                _selectedCategorie = category;
-                              });
-                              // Charger les produits avec le nouveau filtre
-                              _loadProducts();
-                            }
-                          },
-                          selectedColor: theme.colorScheme.primary,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                _isCategoriesLoading 
+                  ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                  : SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          // Option "Toutes les catégories"
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: const Text('Toutes'),
+                              selected: _selectedCategoryId == null,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  setState(() {
+                                    _selectedCategoryId = null;
+                                    _selectedCategoryName = 'Toutes';
+                                  });
+                                  _loadProducts();
+                                }
+                              },
+                              selectedColor: theme.colorScheme.primary,
+                              labelStyle: TextStyle(
+                                color: _selectedCategoryId == null ? Colors.white : Colors.black87,
+                                fontWeight: _selectedCategoryId == null ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              backgroundColor: Colors.grey.shade200,
+                            ),
                           ),
-                          backgroundColor: Colors.grey.shade200,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          // Liste des catégories depuis la base de données
+                          ..._categories.map((category) {
+                            final isSelected = category.id == _selectedCategoryId;
+                            
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(category.nom),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      _selectedCategoryId = category.id;
+                                      _selectedCategoryName = category.nom;
+                                    });
+                                    _loadProducts();
+                                  }
+                                },
+                                selectedColor: theme.colorScheme.primary,
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.black87,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                                backgroundColor: Colors.grey.shade200,
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
               ],
             ),
           ),
@@ -430,7 +489,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
     final TextEditingController imageController = TextEditingController(text: isEditing && product.images.isNotEmpty ? product.images[0] : '');
     final TextEditingController descriptionController = TextEditingController(text: isEditing ? product.description : '');
     
-    String selectedCategory = isEditing ? product.categorie : _categories[1];
+    String? selectedCategoryId = isEditing ? product.categorieId : _categories.isNotEmpty ? _categories[0].id : null;
     bool isAvailable = isEditing ? product.disponible : true;
 
     showDialog(
@@ -579,25 +638,26 @@ class _ProduitsPageState extends State<ProduitsPage> {
                         ],
                       ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Catégorie',
-                      ),
-                      items: _categories
-                          .where((category) => category != 'Toutes')
-                          .map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          selectedCategory = value;
-                        }
-                      },
-                    ),
+                    _isCategoriesLoading 
+                      ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+                      : DropdownButtonFormField<String>(
+                          value: selectedCategoryId,
+                          hint: const Text('Sélectionnez une catégorie'),
+                          decoration: const InputDecoration(
+                            labelText: 'Catégorie',
+                          ),
+                          items: _categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category.id,
+                              child: Text(category.nom),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategoryId = value;
+                            });
+                          },
+                        ),
                     const SizedBox(height: 16),
                     CheckboxListTile(
                       title: const Text('Disponible à la vente'),
@@ -626,6 +686,21 @@ class _ProduitsPageState extends State<ProduitsPage> {
                 ElevatedButton(
                   onPressed: () async {
                     try {
+                      // Vérifier que le formulaire est valide
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Le nom du produit est requis')),
+                        );
+                        return;
+                      }
+                      
+                      if (selectedCategoryId == null || selectedCategoryId!.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Veuillez sélectionner une catégorie')),
+                        );
+                        return;
+                      }
+                      
                       // Télécharger l'image si présente
                       String? imageUrl;
                       if (_selectedImage != null) {
@@ -641,9 +716,9 @@ class _ProduitsPageState extends State<ProduitsPage> {
                         'prix': price,
                         'description': descriptionController.text,
                         'stock': stock,
-                        'categorie': selectedCategory,
+                        'categoryId': selectedCategoryId,
                         'images': imageUrl != null ? [imageUrl] : 
-                                  imageController.text.isNotEmpty ? [imageController.text] : ['https://picsum.photos/200/300'],
+                                  imageController.text.isNotEmpty ? [imageController.text] : ['https://via.placeholder.com/400x300?text=Produit'],
                         'isActive': isAvailable,
                       };
                       

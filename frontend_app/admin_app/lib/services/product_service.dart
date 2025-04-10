@@ -11,37 +11,31 @@ class ProductService {
 
   // Récupérer tous les produits
   Future<Map<String, dynamic>> getProducts({
+    String? search,
+    String? category,
     int page = 1,
     int limit = 10,
-    String? category,
     String? sortBy,
-    double? minPrice,
-    double? maxPrice,
-    bool? inStock,
-    bool? onSale
+    String? sortOrder,
   }) async {
     try {
       final token = await _authService.getToken();
-      
       if (token == null) {
-        throw Exception('Non authentifié');
+        throw Exception('Utilisateur non authentifié');
       }
 
-      // Construction des paramètres de requête
-      Map<String, String> queryParams = {
-        'page': page.toString(),
-        'limit': limit.toString(),
-      };
+      // Construire l'URL avec les paramètres de requête
+      final queryParams = <String, String>{};
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (category != null && category.isNotEmpty) queryParams['category'] = category;
+      if (page > 0) queryParams['page'] = page.toString();
+      if (limit > 0) queryParams['limit'] = limit.toString();
+      if (sortBy != null && sortBy.isNotEmpty) queryParams['sortBy'] = sortBy;
+      if (sortOrder != null && sortOrder.isNotEmpty) queryParams['sortOrder'] = sortOrder;
 
-      if (category != null && category != 'Toutes') queryParams['category'] = category;
-      if (sortBy != null) queryParams['sortBy'] = sortBy;
-      if (minPrice != null) queryParams['minPrice'] = minPrice.toString();
-      if (maxPrice != null) queryParams['maxPrice'] = maxPrice.toString();
-      if (inStock != null) queryParams['inStock'] = inStock.toString();
-      if (onSale != null) queryParams['onSale'] = onSale.toString();
+      final uri = Uri.parse('$baseUrl/products').replace(queryParameters: queryParams);
+      _logger.i('Fetching products: $uri');
 
-      final Uri uri = Uri.parse('$baseUrl/api/produits').replace(queryParameters: queryParams);
-      
       final response = await http.get(
         uri,
         headers: {
@@ -51,12 +45,16 @@ class ProductService {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final data = json.decode(response.body);
+        _logger.i('Products fetched successfully. Total: ${data['total']}');
+        return data;
       } else {
-        throw Exception('Échec de récupération des produits: ${response.body}');
+        final error = json.decode(response.body)['message'] ?? 'Une erreur est survenue';
+        _logger.e('Error fetching products: ${response.statusCode} - $error');
+        throw Exception(error);
       }
     } catch (e) {
-      _logger.e('Erreur dans getProducts: $e');
+      _logger.e('Exception in getProducts: $e');
       rethrow;
     }
   }
@@ -504,6 +502,37 @@ class ProductService {
       }
     } catch (e) {
       _logger.e('Erreur dans createCategory: $e');
+      rethrow;
+    }
+  }
+
+  // Ajouter la méthode pour supprimer un produit
+  Future<void> deleteProduct(String productId) async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null) {
+        throw Exception('Utilisateur non authentifié');
+      }
+
+      _logger.i('Deleting product: $productId');
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/products/$productId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _logger.i('Product deleted successfully');
+      } else {
+        final error = json.decode(response.body)['message'] ?? 'Une erreur est survenue';
+        _logger.e('Error deleting product: ${response.statusCode} - $error');
+        throw Exception(error);
+      }
+    } catch (e) {
+      _logger.e('Exception in deleteProduct: $e');
       rethrow;
     }
   }
