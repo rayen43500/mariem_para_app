@@ -37,6 +37,11 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text,
           _passwordController.text,
         );
+        
+        // Assurez-vous que la navigation se fait vers la page d'accueil client
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/');
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

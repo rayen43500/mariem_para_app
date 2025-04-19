@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 
@@ -35,11 +37,20 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: MaterialApp(
-        title: 'Para Pharmacy',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: const HomeScreen(),
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          return MaterialApp(
+            title: 'Para Pharmacy',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            initialRoute: auth.isAuthenticated ? '/' : '/login',
+            routes: {
+              '/': (context) => const HomeScreen(),
+              '/login': (context) => const LoginScreen(),
+              '/profile': (context) => const ProfileScreen(),
+            },
+          );
+        },
       ),
     );
   }
