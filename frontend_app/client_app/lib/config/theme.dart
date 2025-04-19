@@ -4,23 +4,23 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Couleurs principales
-  static const Color primaryColor = Color(0xFF5C6BC0);
-  static const Color secondaryColor = Color(0xFFF5F7FA);   // Gris très clair
-  static const Color accentColor = Color(0xFF2196F3);      // Bleu médical
-  static const Color backgroundColor = Color(0xFFFFFFFF);  // Fond blanc
+  // Couleurs principales - mises à jour pour correspondre au nouveau style
+  static const Color primaryColor = Color(0xFF1E88E5);     // Bleu médical/pharma
+  static const Color secondaryColor = Color(0xFFF5F9FF);   // Fond légèrement bleuté
+  static const Color accentColor = Color(0xFF26A69A);      // Vert turquoise médical
+  static const Color backgroundColor = Color(0xFFF8FAFD);  // Gris très légèrement bleuté
   static const Color cardColor = Color(0xFFFFFFFF);        // Cartes blanches
   
   // Couleurs de texte
-  static const Color darkTextColor = Color(0xFF1E293B);    // Texte foncé
-  static const Color lightTextColor = Color(0xFF757575);   // Texte secondaire
+  static const Color darkTextColor = Color(0xFF263238);    // Bleu-gris très foncé
+  static const Color lightTextColor = Color(0xFF607D8B);   // Bleu-gris
   static const Color whiteTextColor = Color(0xFFFFFFFF);   // Texte blanc
   
   // Couleurs d'état
-  static const Color successColor = Color(0xFF22C55E);     // Vert succès
-  static const Color errorColor = Color(0xFFEF4444);       // Rouge erreur
-  static const Color warningColor = Color(0xFFF59E0B);     // Orange avertissement
-  static const Color infoColor = Color(0xFF3B82F6);        // Bleu information
+  static const Color successColor = Color(0xFF66BB6A);     // Vert succès
+  static const Color errorColor = Color(0xFFEF5350);       // Rouge erreur
+  static const Color warningColor = Color(0xFFFFB74D);     // Orange avertissement
+  static const Color infoColor = Color(0xFF42A5F5);        // Bleu information
 
   // Polices et tailles
   static const double fontSizeSmall = 12.0;
@@ -41,7 +41,12 @@ class AppTheme {
       primaryColor: primaryColor,
       colorScheme: const ColorScheme.light(
         primary: primaryColor,
+        secondary: accentColor,
+        background: backgroundColor,
+        surface: cardColor,
+        error: errorColor,
       ),
+      scaffoldBackgroundColor: backgroundColor,
     );
   }
 
@@ -50,12 +55,14 @@ class AppTheme {
     fontSize: fontSizeXLarge,
     fontWeight: FontWeight.bold,
     color: darkTextColor,
+    letterSpacing: 0.3,
   );
 
   static const TextStyle titleTextStyle = TextStyle(
     fontSize: fontSizeLarge,
     fontWeight: FontWeight.bold,
     color: darkTextColor,
+    letterSpacing: 0.1,
   );
 
   static const TextStyle subtitleTextStyle = TextStyle(
@@ -67,19 +74,21 @@ class AppTheme {
   static const TextStyle smallTextStyle = TextStyle(
     fontSize: fontSizeSmall,
     color: lightTextColor,
+    fontWeight: FontWeight.w500,
   );
 
   static const buttonTextStyle = TextStyle(
     fontSize: fontSizeMedium,
     fontWeight: FontWeight.w600,
     color: whiteTextColor,
+    letterSpacing: 0.2,
   );
 
   // Décoration pour les champs de texte
   static InputDecoration textFieldDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: primaryColor),
+      prefixIcon: Icon(icon, color: primaryColor, size: 20),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusMedium),
         borderSide: BorderSide.none,
@@ -95,6 +104,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusMedium),
         borderSide: const BorderSide(color: primaryColor, width: 1.5),
       ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 
@@ -102,19 +112,20 @@ class AppTheme {
   static final ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
     foregroundColor: whiteTextColor,
     backgroundColor: primaryColor,
-    padding: const EdgeInsets.symmetric(vertical: 16),
+    padding: const EdgeInsets.symmetric(vertical: 14),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusMedium),
     ),
     textStyle: buttonTextStyle,
-    elevation: 0,
+    elevation: 2,
+    shadowColor: primaryColor.withOpacity(0.4),
   );
 
   // Style pour les boutons secondaires
   static final ButtonStyle secondaryButtonStyle = OutlinedButton.styleFrom(
     foregroundColor: primaryColor,
     side: const BorderSide(color: primaryColor, width: 1.5),
-    padding: const EdgeInsets.symmetric(vertical: 16),
+    padding: const EdgeInsets.symmetric(vertical: 14),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusMedium),
     ),
@@ -129,8 +140,8 @@ class AppTheme {
       boxShadow: [
         BoxShadow(
           color: Colors.black.withOpacity(0.05),
-          spreadRadius: 1,
-          blurRadius: 10,
+          spreadRadius: 0,
+          blurRadius: 8,
           offset: const Offset(0, 2),
         ),
       ],

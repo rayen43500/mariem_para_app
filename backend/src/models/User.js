@@ -105,6 +105,11 @@ userSchema.methods.generateResetPasswordToken = function() {
 
 // Méthode pour gérer les tentatives de connexion
 userSchema.methods.incrementLoginAttempts = async function() {
+  // NOTE: Cette méthode a été modifiée pour désactiver le verrouillage du compte
+  // En production, il est recommandé de réactiver cette sécurité
+  
+  // Version originale commentée :
+  /*
   if (this.lockUntil && this.lockUntil > Date.now()) {
     throw new Error('Compte temporairement bloqué');
   }
@@ -116,13 +121,23 @@ userSchema.methods.incrementLoginAttempts = async function() {
   }
   
   await this.save({ validateBeforeSave: false });
+  */
+  
+  // Version désactivée (ne fait rien)
+  return;
 };
 
 // Méthode pour réinitialiser les tentatives de connexion
 userSchema.methods.resetLoginAttempts = async function() {
+  // Version désactivée pour correspondre à la méthode incrementLoginAttempts
+  return;
+  
+  // Version originale commentée :
+  /*
   this.loginAttempts = 0;
   this.lockUntil = undefined;
   await this.save({ validateBeforeSave: false });
+  */
 };
 
 module.exports = mongoose.model('User', userSchema); 

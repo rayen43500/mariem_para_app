@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final CategoryService _categoryService = CategoryService();
   final ProductService _productService = ProductService();
   final PromotionService _promotionService = PromotionService();
+  final CartService _cartService = CartService();
   
   List<dynamic> _categories = [];
   List<dynamic> _products = [];
@@ -683,7 +684,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final hasStock = (product['stock'] ?? 0) > 0;
             
             return InkWell(
-              onTap: () => _navigateToProductDetail(product),
+              onTap: () => _showProductDetails(product),
               borderRadius: BorderRadius.circular(8.0),
               child: Container(
                 decoration: BoxDecoration(
@@ -785,6 +786,40 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 4),
                           _buildPriceSection(product),
+                          const SizedBox(height: 8),
+                          // Bouton Ajouter au panier
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: hasStock ? () => _addToCart(product) : null,
+                              icon: const Icon(Icons.shopping_cart_outlined, size: 16),
+                              label: const Text('Ajouter au panier'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Bouton Voir détails
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              onPressed: () => _showProductDetails(product),
+                              icon: const Icon(Icons.info_outline, size: 16),
+                              label: const Text('Voir détails'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.primaryColor,
+                                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1459,6 +1494,281 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _addToCart(Map<String, dynamic> product) {
+    try {
+      final productId = product['_id'];
+      
+      if (productId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible d\'ajouter ce produit au panier.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Afficher une SnackBar de chargement
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ajout au panier...'),
+          duration: Duration(milliseconds: 500),
+        ),
+      );
+      
+      // Ajouter au panier avec la quantité par défaut de 1
+      _cartService.addToCart(productId.toString(), 1).then((_) {
+        // Afficher un message de confirmation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product['nom']} ajouté au panier'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'VOIR PANIER',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CartScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }).catchError((error) {
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${error.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
+    } catch (e) {
+      // Gérer les erreurs imprévues
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur inattendue: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Afficher une fenêtre modale avec les détails du produit
+  void _showProductDetails(Map<String, dynamic> product) {
+    final String name = product['nom'] ?? 'Produit';
+    final String description = product['description'] ?? 'Aucune description disponible.';
+    final List<dynamic>? imageUrls = product['images'] as List<dynamic>?;
+    final String imageUrl = imageUrls != null && imageUrls.isNotEmpty 
+      ? imageUrls.first.toString()
+      : 'https://via.placeholder.com/300x300?text=Produit';
+    final double price = _getProductPrice(product, 'prix') ?? 0.0;
+    final double finalPrice = _getProductPrice(product, 'prixFinal') ?? 
+                              _getProductPrice(product, 'prixPromo') ?? 
+                              price;
+    final bool isOnSale = finalPrice < price;
+    final bool hasStock = (product['stock'] ?? 0) > 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // En-tête avec le nom du produit et le bouton de fermeture
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Image et prix
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported, size: 40),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  
+                  // Prix et disponibilité
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Prix
+                        Row(
+                          children: [
+                            Text(
+                              '${finalPrice.toStringAsFixed(2)} €',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isOnSale ? Colors.red : const Color(0xFF212121),
+                              ),
+                            ),
+                            if (isOnSale) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '${price.toStringAsFixed(2)} €',
+                                style: const TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Color(0xFF757575),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Disponibilité
+                        Row(
+                          children: [
+                            Icon(
+                              hasStock ? Icons.check_circle : Icons.cancel,
+                              color: hasStock ? Colors.green : Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              hasStock ? 'En stock' : 'Rupture de stock',
+                              style: TextStyle(
+                                color: hasStock ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Voir le produit complet
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _navigateToProductDetail(product);
+                          },
+                          child: Text(
+                            'Voir la fiche produit complète',
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              
+              // Description
+              const Text(
+                'Description',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Bouton d'action
+              if (hasStock)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _addToCart(product);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Ajouter au panier',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 } 

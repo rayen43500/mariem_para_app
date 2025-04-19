@@ -2,51 +2,64 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Couleurs principales
-  static const Color primaryColor = Color(0xFF5C6BC0); // Indigo plus moderne
-  static const Color primaryColorLight = Color(0xFF8E99F3);
-  static const Color primaryColorDark = Color(0xFF26418F);
+  // Nouvelle palette de couleurs pour parapharmacie
+  static const Color primaryColor = Color(0xFF1E88E5);     // Bleu médical/pharma
+  static const Color primaryColorLight = Color(0xFF64B5F6); // Bleu clair
+  static const Color primaryColorDark = Color(0xFF0D47A1);  // Bleu foncé
+  
+  // Vert médical/pharmacie comme accent
+  static const Color accentColor = Color(0xFF26A69A);       // Vert turquoise médical
+  static const Color accentColorLight = Color(0xFF80CBC4);  // Vert clair
   
   // Couleurs secondaires
-  static const Color secondaryColor = Color(0xFFF5F7FF); // Fond légèrement bleuté
-  static const Color accentColor = Color(0xFFFF5252);    // Rouge vif pour accent
+  static const Color secondaryColor = Color(0xFFF5F9FF);    // Fond légèrement bleuté
   
   // Couleurs complémentaires
-  static const Color successColor = Color(0xFF66BB6A);
-  static const Color warningColor = Color(0xFFFFB74D);
-  static const Color errorColor = Color(0xFFE57373);
-  static const Color infoColor = Color(0xFF4FC3F7);
+  static const Color successColor = Color(0xFF66BB6A);      // Vert
+  static const Color warningColor = Color(0xFFFFB74D);      // Orange
+  static const Color errorColor = Color(0xFFEF5350);        // Rouge atténué
+  static const Color infoColor = Color(0xFF42A5F5);         // Bleu info
   
   // Couleurs de texte
-  static const Color textColor = Color(0xFF212121);
-  static const Color lightTextColor = Color(0xFF757575);
-  static const Color ultraLightTextColor = Color(0xFFBDBDBD);
+  static const Color textColor = Color(0xFF263238);         // Bleu-gris très foncé
+  static const Color lightTextColor = Color(0xFF607D8B);    // Bleu-gris
+  static const Color ultraLightTextColor = Color(0xFFB0BEC5); // Bleu-gris clair
   
   // Couleurs de fond
   static const Color backgroundColor = Colors.white;
   static const Color surfaceColor = Colors.white;
-  static const Color scaffoldBackgroundColor = Color(0xFFFAFAFA);
+  static const Color scaffoldBackgroundColor = Color(0xFFF8FAFD); // Gris très légèrement bleuté
   
   // Couleurs de carte
   static const Color cardColor = Colors.white;
-  static const Color dividerColor = Color(0xFFEEEEEE);
+  static const Color dividerColor = Color(0xFFECEFF1);      // Bleu-gris très clair
   
   // Statut des produits
-  static const Color outOfStockColor = Color(0xFFE57373);
-  static const Color lowStockColor = Color(0xFFFFB74D);
-  static const Color inStockColor = Color(0xFF66BB6A);
+  static const Color outOfStockColor = Color(0xFFEF5350);   // Rouge atténué
+  static const Color lowStockColor = Color(0xFFFFB74D);     // Orange
+  static const Color inStockColor = Color(0xFF66BB6A);      // Vert
+  
+  // Nouvelles couleurs pour catégories
+  static const Color categoryBlue = Color(0xFF42A5F5);      // Bleu
+  static const Color categoryGreen = Color(0xFF66BB6A);     // Vert
+  static const Color categoryPurple = Color(0xFF9575CD);    // Violet
+  static const Color categoryOrange = Color(0xFFFFB74D);    // Orange
+  static const Color categoryRed = Color(0xFFEF5350);       // Rouge
+  static const Color categoryTeal = Color(0xFF26A69A);      // Turquoise
+  static const Color categoryPink = Color(0xFFF06292);      // Rose
+  static const Color categoryIndigo = Color(0xFF5C6BC0);    // Indigo
   
   // Rayons
   static const double radiusSmall = 4.0;
   static const double radiusMedium = 8.0;
-  static const double radiusLarge = 16.0;
-  static const double radiusXLarge = 24.0;
+  static const double radiusLarge = 12.0;
+  static const double radiusXLarge = 20.0;
   
   // Élévations
   static const double elevationSmall = 1.0;
-  static const double elevationMedium = 3.0;
-  static const double elevationLarge = 6.0;
-  static const double elevationXLarge = 10.0;
+  static const double elevationMedium = 2.0;
+  static const double elevationLarge = 4.0;
+  static const double elevationXLarge = 8.0;
   
   // Padding
   static const double paddingSmall = 8.0;
@@ -54,51 +67,98 @@ class AppTheme {
   static const double paddingLarge = 24.0;
   static const double paddingXLarge = 32.0;
   
-  // Styles de texte
-  static TextStyle get headingStyle => GoogleFonts.poppins(
+  // Styles de texte améliorés
+  static TextStyle get headingStyle => GoogleFonts.montserrat(
     fontSize: 24,
     fontWeight: FontWeight.bold,
+    color: textColor,
+    letterSpacing: 0.3,
+  );
+  
+  static TextStyle get subheadingStyle => GoogleFonts.montserrat(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
     color: textColor,
     letterSpacing: 0.2,
   );
   
-  static TextStyle get subheadingStyle => GoogleFonts.poppins(
-    fontSize: 20,
+  static TextStyle get titleStyle => GoogleFonts.montserrat(
+    fontSize: 18,
     fontWeight: FontWeight.w600,
     color: textColor,
     letterSpacing: 0.1,
   );
   
-  static TextStyle get titleStyle => GoogleFonts.poppins(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: textColor,
-  );
-  
-  static TextStyle get subtitleStyle => GoogleFonts.poppins(
+  static TextStyle get subtitleStyle => GoogleFonts.montserrat(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: textColor,
   );
   
-  static TextStyle get bodyStyle => GoogleFonts.poppins(
-    fontSize: 14,
+  static TextStyle get bodyStyle => GoogleFonts.nunito(
+    fontSize: 15,
     color: textColor,
     letterSpacing: 0.2,
   );
   
-  static TextStyle get smallTextStyle => GoogleFonts.poppins(
+  static TextStyle get smallTextStyle => GoogleFonts.nunito(
+    fontSize: 13,
+    color: lightTextColor,
+    fontWeight: FontWeight.w500,
+  );
+  
+  static TextStyle get captionStyle => GoogleFonts.nunito(
     fontSize: 12,
     color: lightTextColor,
+    fontWeight: FontWeight.w400,
   );
   
-  static TextStyle get captionStyle => GoogleFonts.poppins(
-    fontSize: 11,
-    color: lightTextColor,
-    fontWeight: FontWeight.w300,
+  // Décoration pour les champs de texte
+  static InputDecoration textFieldDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: primaryColor, size: 20),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radiusMedium),
+        borderSide: BorderSide.none,
+      ),
+      filled: true,
+      fillColor: secondaryColor,
+      labelStyle: GoogleFonts.nunito(
+        color: lightTextColor,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radiusMedium),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radiusMedium),
+        borderSide: const BorderSide(color: primaryColor, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+  
+  // Style pour les boutons primaires
+  static final ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
+    foregroundColor: Colors.white,
+    backgroundColor: primaryColor,
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radiusMedium),
+    ),
+    textStyle: GoogleFonts.montserrat(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.3,
+    ),
+    elevation: 2,
+    shadowColor: primaryColor.withOpacity(0.4),
   );
   
-  // Thème clair
+  // Thème clair amélioré
   static ThemeData get lightTheme {
     return ThemeData(
       primaryColor: primaryColor,
@@ -113,20 +173,22 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
         elevation: 0,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.poppins(
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.montserrat(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
+          letterSpacing: 0.2,
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      cardTheme: const CardTheme(
+      cardTheme: CardTheme(
         color: cardColor,
         elevation: elevationSmall,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radiusMedium)),
+          borderRadius: BorderRadius.circular(radiusMedium),
         ),
+        shadowColor: Colors.black.withOpacity(0.05),
       ),
       buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(
@@ -139,28 +201,31 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
           elevation: elevationSmall,
-          textStyle: GoogleFonts.poppins(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
+          shadowColor: primaryColor.withOpacity(0.3),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          side: const BorderSide(color: primaryColor, width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMedium),
           ),
-          textStyle: GoogleFonts.poppins(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
         ),
       ),
@@ -168,9 +233,10 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: GoogleFonts.poppins(
+          textStyle: GoogleFonts.montserrat(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            letterSpacing: 0.1,
           ),
         ),
       ),
@@ -193,10 +259,16 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: const BorderSide(color: errorColor, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        hintStyle: GoogleFonts.poppins(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: GoogleFonts.nunito(
           color: lightTextColor,
           fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        labelStyle: GoogleFonts.nunito(
+          color: lightTextColor,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
       ),
       textTheme: TextTheme(
@@ -214,13 +286,15 @@ class AppTheme {
         selectedColor: primaryColorLight,
         secondarySelectedColor: primaryColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        labelStyle: GoogleFonts.poppins(
-          fontSize: 12,
+        labelStyle: GoogleFonts.nunito(
+          fontSize: 13,
           color: textColor,
+          fontWeight: FontWeight.w500,
         ),
-        secondaryLabelStyle: GoogleFonts.poppins(
-          fontSize: 12,
+        secondaryLabelStyle: GoogleFonts.nunito(
+          fontSize: 13,
           color: Colors.white,
+          fontWeight: FontWeight.w500,
         ),
         brightness: Brightness.light,
       ),
@@ -229,12 +303,28 @@ class AppTheme {
         thickness: 1,
         space: 24,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: primaryColor,
         unselectedItemColor: lightTextColor,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+        selectedLabelStyle: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      iconTheme: const IconThemeData(
+        color: lightTextColor,
+        size: 24,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: primaryColor,
+        circularTrackColor: secondaryColor,
       ),
     );
   }
