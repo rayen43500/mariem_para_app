@@ -33,7 +33,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/cart/add'),
+        Uri.parse('$baseUrl/cart'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -44,14 +44,17 @@ class CartService {
         }),
       );
 
-      if (response.statusCode == 200) {
+      print('Réponse ajout panier: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
-        return data['data'];
+        return data['data'] ?? data;
       } else {
-        throw Exception('Failed to add to cart');
+        throw Exception('Échec de l\'ajout au panier: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      throw Exception('Error: $e');
+      print('Erreur addToCart: $e');
+      throw Exception('Erreur: $e');
     }
   }
 
@@ -59,7 +62,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.put(
-        Uri.parse('$baseUrl/cart/update/$productId'),
+        Uri.parse('$baseUrl/cart/$productId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -71,7 +74,7 @@ class CartService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['data'];
+        return data['data'] ?? data;
       } else {
         throw Exception('Failed to update quantity');
       }
@@ -84,7 +87,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.delete(
-        Uri.parse('$baseUrl/cart/remove/$productId'),
+        Uri.parse('$baseUrl/cart/$productId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -93,7 +96,7 @@ class CartService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['data'];
+        return data['data'] ?? data;
       } else {
         throw Exception('Failed to remove from cart');
       }
@@ -106,7 +109,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.delete(
-        Uri.parse('$baseUrl/cart/clear'),
+        Uri.parse('$baseUrl/cart'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -115,7 +118,7 @@ class CartService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['data'];
+        return data['data'] ?? data;
       } else {
         throw Exception('Failed to clear cart');
       }
@@ -128,7 +131,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/cart/promo'),
+        Uri.parse('$baseUrl/cart/coupon'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -140,7 +143,7 @@ class CartService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['data'];
+        return data['data'] ?? data;
       } else {
         throw Exception('Failed to apply promo code');
       }
