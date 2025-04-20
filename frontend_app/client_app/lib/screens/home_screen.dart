@@ -1502,61 +1502,73 @@ class _HomeScreenState extends State<HomeScreen> {
       final productId = product['_id'];
       
       if (productId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossible d\'ajouter ce produit au panier.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible d\'ajouter ce produit au panier.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
       
       // Afficher une SnackBar de chargement
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ajout au panier...'),
-          duration: Duration(milliseconds: 500),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ajout au panier...'),
+            duration: Duration(milliseconds: 500),
+          ),
+        );
+      }
       
       // Ajouter au panier avec la quantité par défaut de 1
-      _cartService.addToCart(productId.toString(), 1).then((_) {
+      _cartService.addToCart(productId.toString(), 1, product).then((_) {
         // Afficher un message de confirmation
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${product['nom']} ajouté au panier'),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'VOIR PANIER',
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CartScreen(),
-                  ),
-                );
-              },
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${product['nom']} ajouté au panier'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'VOIR PANIER',
+                textColor: Colors.white,
+                onPressed: () {
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartScreen(),
+                      ),
+                    );
+                  }
+                },
+              ),
             ),
-          ),
-        );
+          );
+        }
       }).catchError((error) {
         // Afficher un message d'erreur
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${error.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur: ${error.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       });
     } catch (e) {
       // Gérer les erreurs imprévues
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur inattendue: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur inattendue: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

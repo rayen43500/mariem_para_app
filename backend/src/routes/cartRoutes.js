@@ -21,6 +21,9 @@ router.use(protect);
 // Obtenir le panier de l'utilisateur
 router.get('/', cartController.getCart);
 
+// Synchroniser le panier avec le backend
+router.post('/sync', cartController.syncCart);
+
 // Ajouter un produit au panier
 router.post('/', cartController.addToCart);
 

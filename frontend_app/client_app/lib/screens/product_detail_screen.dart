@@ -96,7 +96,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (_product == null) return;
 
     try {
-      await _cartService.addToCart(widget.productId, _quantity);
+      await _cartService.addToCart(widget.productId, _quantity, _product!);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

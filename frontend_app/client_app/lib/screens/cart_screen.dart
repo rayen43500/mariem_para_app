@@ -11,7 +11,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
-  Map<String, dynamic>? _cart;
+  List<Map<String, dynamic>>? _cart;
   bool _isLoading = true;
   String? _promoCode;
   bool _isApplyingPromo = false;
@@ -130,7 +130,7 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: const Text('Mon panier'),
         actions: [
-          if (_cart != null && (_cart!['items'] as List).isNotEmpty)
+          if (_cart != null && _cart!.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               onPressed: _clearCart,
@@ -141,14 +141,14 @@ class _CartScreenState extends State<CartScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildCartContent(),
-      bottomNavigationBar: _cart != null && (_cart!['items'] as List).isNotEmpty
+      bottomNavigationBar: _cart != null && _cart!.isNotEmpty
           ? _buildBottomBar()
           : null,
     );
   }
 
   Widget _buildCartContent() {
-    if (_cart == null || (_cart!['items'] as List).isEmpty) {
+    if (_cart == null || _cart!.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -188,19 +188,18 @@ class _CartScreenState extends State<CartScreen> {
       );
     }
 
-    final items = _cart!['items'] as List;
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: items.length,
+            itemCount: _cart!.length,
             itemBuilder: (context, index) {
-              final item = items[index];
+              final item = _cart![index];
               final produit = item['produit'];
               final quantity = item['quantite'];
-              final prix = produit['prix'];
-              final prixPromo = produit['prixPromo'];
+              final prix = double.parse(produit['prix'].toString());
+              final prixPromo = produit['prixPromo'] != null ? double.parse(produit['prixPromo'].toString()) : null;
               final prixFinal = prixPromo ?? prix;
               final discount = prix - prixFinal;
 
@@ -356,8 +355,20 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildBottomBar() {
     if (_cart == null) return const SizedBox.shrink();
     
-    final totalOriginal = _cart!['totalOriginal'] ?? 0.0;
-    final total = _cart!['total'] ?? 0.0;
+    double totalOriginal = 0;
+    double total = 0;
+    
+    for (var item in _cart!) {
+      final produit = item['produit'];
+      final quantity = item['quantite'];
+      final prix = double.parse(produit['prix'].toString());
+      final prixPromo = produit['prixPromo'] != null ? double.parse(produit['prixPromo'].toString()) : null;
+      final prixFinal = prixPromo ?? prix;
+      
+      totalOriginal += prix * quantity;
+      total += prixFinal * quantity;
+    }
+    
     final discount = totalOriginal - total;
     final hasDiscount = discount > 0;
 

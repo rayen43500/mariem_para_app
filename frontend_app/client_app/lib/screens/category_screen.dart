@@ -504,7 +504,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       onPressed: inStock
                           ? () async {
                               try {
-                                await _cartService.addToCart(id, 1);
+                                await _cartService.addToCart(id, 1, product);
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('$name ajouté au panier')),

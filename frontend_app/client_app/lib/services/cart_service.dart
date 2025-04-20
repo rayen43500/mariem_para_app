@@ -2,128 +2,76 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'auth_service.dart';
+import 'local_cart_service.dart';
 
 class CartService {
   final String baseUrl = ApiConfig.baseUrl;
   final AuthService _authService = AuthService();
+  final LocalCartService _localCartService = LocalCartService();
 
-  Future<Map<String, dynamic>> getCart() async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('$baseUrl/cart'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'];
-      } else {
-        throw Exception('Failed to load cart');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
+  // Obtenir le panier local
+  Future<List<Map<String, dynamic>>> getCart() async {
+    return await _localCartService.getCart();
   }
 
-  Future<Map<String, dynamic>> addToCart(String productId, int quantity) async {
+  // Ajouter un produit au panier local
+  Future<void> addToCart(String productId, int quantity, Map<String, dynamic> product) async {
+    await _localCartService.addToCart(productId, quantity, product);
+  }
+
+  // Mettre à jour la quantité d'un produit dans le panier local
+  Future<void> updateQuantity(String productId, int quantity) async {
+    await _localCartService.updateQuantity(productId, quantity);
+  }
+
+  // Supprimer un produit du panier local
+  Future<void> removeFromCart(String productId) async {
+    await _localCartService.removeFromCart(productId);
+  }
+
+  // Vider le panier local
+  Future<void> clearCart() async {
+    await _localCartService.clearCart();
+  }
+
+  // Calculer le total du panier local
+  Future<double> calculateTotal() async {
+    return await _localCartService.calculateTotal();
+  }
+
+  // Synchroniser le panier avec le backend lors de la commande
+  Future<Map<String, dynamic>> syncCartWithBackend() async {
     try {
       final token = await _authService.getToken();
+      final localCart = await _localCartService.getCart();
+
+      // Préparer les données pour la synchronisation
+      final items = localCart.map((item) => {
+        'produitId': item['produitId'],
+        'quantite': item['quantite']
+      }).toList();
+
+      // Envoyer les données au backend
       final response = await http.post(
-        Uri.parse('$baseUrl/cart'),
+        Uri.parse('$baseUrl/cart/sync'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'produitId': productId,
-          'quantite': quantity,
+          'items': items,
         }),
       );
-
-      print('Réponse ajout panier: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['data'] ?? data;
       } else {
-        throw Exception('Échec de l\'ajout au panier: ${response.statusCode} ${response.body}');
+        throw Exception('Échec de la synchronisation du panier: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      print('Erreur addToCart: $e');
+      print('Erreur syncCartWithBackend: $e');
       throw Exception('Erreur: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> updateQuantity(String productId, int quantity) async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.put(
-        Uri.parse('$baseUrl/cart/$productId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({
-          'quantite': quantity,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'] ?? data;
-      } else {
-        throw Exception('Failed to update quantity');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> removeFromCart(String productId) async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/cart/$productId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'] ?? data;
-      } else {
-        throw Exception('Failed to remove from cart');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> clearCart() async {
-    try {
-      final token = await _authService.getToken();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/cart'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'] ?? data;
-      } else {
-        throw Exception('Failed to clear cart');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
     }
   }
 

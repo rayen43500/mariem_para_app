@@ -272,5 +272,65 @@ exports.applyPromoCode = async (req, res) => {
   }
 };
 
+// Synchroniser le panier avec le backend
+exports.syncCart = async (req, res) => {
+  try {
+    const { items } = req.body;
+    
+    // Vérifier que tous les produits existent et ont suffisamment de stock
+    for (const item of items) {
+      const product = await Product.findById(item.produitId);
+      
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          error: `Produit ${item.produitId} non trouvé`
+        });
+      }
+      
+      if (product.stock < item.quantite) {
+        return res.status(400).json({
+          success: false,
+          error: `Stock insuffisant pour le produit ${product.nom}`
+        });
+      }
+    }
+    
+    // Mettre à jour le panier de l'utilisateur
+    let cart = await Cart.findOne({ user: req.user._id });
+    
+    if (!cart) {
+      cart = await Cart.create({ user: req.user._id });
+    }
+    
+    // Mettre à jour les items du panier
+    cart.items = items.map(item => ({
+      produit: item.produitId,
+      quantite: item.quantite
+    }));
+    
+    await cart.save();
+    
+    // Mettre à jour les stocks des produits
+    for (const item of items) {
+      await Product.findByIdAndUpdate(
+        item.produitId,
+        { $inc: { stock: -item.quantite } }
+      );
+    }
+    
+    res.json({
+      success: true,
+      data: cart
+    });
+  } catch (error) {
+    console.error('Error syncing cart:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error syncing cart'
+    });
+  }
+};
+
 // Export rate limiter for use in routes
 exports.cartLimiter = cartLimiter; 

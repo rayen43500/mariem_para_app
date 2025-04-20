@@ -151,4 +151,80 @@ exports.assignDeliveryPerson = async (req, res) => {
 };
 
 // Exporter le middleware de rate limiting
-exports.orderLimiter = orderLimiter; 
+exports.orderLimiter = orderLimiter;
+
+// Créer une commande à partir d'un panier synchronisé
+exports.createOrderFromSync = async (req, res) => {
+  try {
+    const { adresse, methodePaiement, notes } = req.body;
+
+    if (!adresse) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Adresse de livraison requise' 
+      });
+    }
+
+    if (!methodePaiement) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Méthode de paiement requise' 
+      });
+    }
+
+    // Récupérer le panier de l'utilisateur
+    const cart = await Cart.findOne({ user: req.user._id })
+      .populate('items.produit');
+    
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Panier vide' 
+      });
+    }
+
+    // Calculer le montant total
+    let total = 0;
+    for (const item of cart.items) {
+      const price = item.produit.prixPromo || item.produit.prix;
+      total += price * item.quantite;
+    }
+
+    // Créer la commande
+    const order = new Order({
+      user: req.user._id,
+      items: cart.items.map(item => ({
+        produit: item.produit._id,
+        quantite: item.quantite,
+        prix: item.produit.prixPromo || item.produit.prix
+      })),
+      adresse,
+      methodePaiement,
+      notes,
+      promoCode: cart.promoCode,
+      total,
+      status: 'En attente'
+    });
+
+    await order.save();
+    
+    // Charger les relations pour la réponse
+    await order.populate('items.produit', 'nom prix images prixPromo');
+
+    // Vider le panier
+    cart.items = [];
+    cart.promoCode = null;
+    await cart.save();
+
+    res.status(201).json({ 
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Erreur lors de la création de la commande' 
+    });
+  }
+}; 
