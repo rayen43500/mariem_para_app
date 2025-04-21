@@ -6,12 +6,11 @@ const { cartLimiter } = require('../middleware/rateLimiter');
 // Get user's cart
 exports.getCart = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ user: req.user._id })
-      .populate('items.produit', 'nom prix images stock prixPromo discount')
-      .populate('promoCode', 'code type value');
+    let cart = await Cart.findOne({ userId: req.user.id })
+      .populate('produits.produitId', 'nom prix images stock prixPromo discount');
 
     if (!cart) {
-      cart = await Cart.create({ user: req.user._id });
+      cart = await Cart.create({ userId: req.user.id });
     }
 
     res.json({
@@ -297,27 +296,29 @@ exports.syncCart = async (req, res) => {
     }
     
     // Mettre à jour le panier de l'utilisateur
-    let cart = await Cart.findOne({ user: req.user._id });
+    let cart = await Cart.findOne({ userId: req.user.id });
     
     if (!cart) {
-      cart = await Cart.create({ user: req.user._id });
+      cart = await Cart.create({ userId: req.user.id });
     }
     
     // Mettre à jour les items du panier
-    cart.items = items.map(item => ({
-      produit: item.produitId,
-      quantite: item.quantite
+    cart.produits = items.map(item => ({
+      produitId: item.produitId,
+      quantité: item.quantite,
+      prixUnitaire: 0 // Sera mis à jour avec le prix du produit ci-dessous
     }));
     
-    await cart.save();
-    
-    // Mettre à jour les stocks des produits
-    for (const item of items) {
-      await Product.findByIdAndUpdate(
-        item.produitId,
-        { $inc: { stock: -item.quantite } }
-      );
+    // Mettre à jour les prix unitaires
+    for (let i = 0; i < cart.produits.length; i++) {
+      const item = cart.produits[i];
+      const product = await Product.findById(item.produitId);
+      cart.produits[i].prixUnitaire = product.prix;
     }
+    
+    // Recalculer le total
+    cart.calculerTotal();
+    await cart.save();
     
     res.json({
       success: true,

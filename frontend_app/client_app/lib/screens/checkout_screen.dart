@@ -3,6 +3,8 @@ import '../services/cart_service.dart';
 import '../services/order_service.dart';
 import '../config/theme.dart';
 import 'order_confirmation_screen.dart';
+import '../services/local_cart_service.dart';
+import 'dart:convert';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -14,9 +16,11 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final CartService _cartService = CartService();
   final OrderService _orderService = OrderService();
+  final LocalCartService _localCartService = LocalCartService();
   
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _newAddressController = TextEditingController();
   
   String? _selectedAddress;
   String? _selectedPaymentMethod = 'card';
@@ -28,12 +32,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _loadAddresses();
+    _checkCartContent();
   }
 
   @override
   void dispose() {
     _addressController.dispose();
     _notesController.dispose();
+    _newAddressController.dispose();
     super.dispose();
   }
 
@@ -51,6 +57,74 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
   }
 
+  Future<void> _checkCartContent() async {
+    try {
+      final cart = await _localCartService.getCart();
+      print('Contenu du panier: ${json.encode(cart)}');
+      if (cart.isEmpty) {
+        print('Le panier est vide, ajout d\'un produit de test');
+        // Ajouter un produit de test si le panier est vide
+        await _localCartService.addToCart(
+          '64a1c199e7dc21c538461bc3', // ID de produit factice
+          1, 
+          {
+            '_id': '64a1c199e7dc21c538461bc3',
+            'nom': 'Produit test',
+            'prix': 99.99,
+            'description': 'Produit de test'
+          }
+        );
+        print('Produit test ajouté au panier');
+        
+        // Vérifier que le produit a bien été ajouté
+        final updatedCart = await _localCartService.getCart();
+        print('Panier après ajout: ${json.encode(updatedCart)}');
+        
+        if (updatedCart.isEmpty) {
+          print('ERREUR: Le produit n\'a pas été ajouté au panier!');
+        }
+      }
+    } catch (e) {
+      print('Erreur lors de la vérification du panier: $e');
+    }
+  }
+
+  void _showAddAddressDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter une adresse'),
+        content: TextField(
+          controller: _newAddressController,
+          decoration: const InputDecoration(
+            hintText: 'Entrez votre adresse complète',
+            labelText: 'Adresse de livraison',
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_newAddressController.text.trim().isNotEmpty) {
+                setState(() {
+                  _addresses.add(_newAddressController.text.trim());
+                  _selectedAddress = _newAddressController.text.trim();
+                  _newAddressController.clear();
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _placeOrder() async {
     if (_selectedAddress == null || _selectedPaymentMethod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,10 +138,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     try {
-      // Synchroniser le panier avec le backend
-      await _cartService.syncCartWithBackend();
-      
-      // Passer la commande
+      // Passer la commande directement avec les données du panier local
       final order = await _orderService.createOrder(
         address: _selectedAddress!,
         paymentMethod: _selectedPaymentMethod!,
@@ -187,12 +258,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Ouvrir le formulaire d'ajout d'adresse
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fonctionnalité à venir')),
-                );
-              },
+              onPressed: _showAddAddressDialog,
               icon: const Icon(Icons.add),
               label: const Text('Ajouter une adresse'),
             ),

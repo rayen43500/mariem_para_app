@@ -53,7 +53,7 @@ class CartService {
 
       // Envoyer les données au backend
       final response = await http.post(
-        Uri.parse('$baseUrl/cart/sync'),
+        Uri.parse('$baseUrl/panier'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -79,7 +79,7 @@ class CartService {
     try {
       final token = await _authService.getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/cart/coupon'),
+        Uri.parse('$baseUrl/panier/coupon'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

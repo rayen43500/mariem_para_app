@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../services/cart_service.dart';
+import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -433,10 +434,10 @@ class _CartScreenState extends State<CartScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implémenter la commande
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fonctionnalité de commande à venir')),
+              onPressed: _cart!.isEmpty ? null : () {
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => const CheckoutScreen())
                 );
               },
               style: ElevatedButton.styleFrom(
