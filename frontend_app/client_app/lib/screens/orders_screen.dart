@@ -5,6 +5,7 @@ import 'order_detail_screen.dart';
 import '../theme/app_theme.dart' as theme;
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'cart_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -163,6 +164,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
               : _orders.isEmpty 
                   ? _buildEmptyOrdersWidget() 
                   : _buildOrdersList(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CartScreen()),
+          );
+        },
+        label: const Text('Passer une commande'),
+        icon: const Icon(Icons.add_shopping_cart),
+        backgroundColor: Theme.of(context).primaryColor,
+      ),
     );
   }
 

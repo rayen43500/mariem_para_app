@@ -166,13 +166,20 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: const Icon(Icons.shopping_bag_outlined),
+            tooltip: 'Mes commandes',
             onPressed: () {
-              // TODO: Implémenter les notifications
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OrdersScreen(),
+                ),
+              );
             },
           ),
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined),
+            tooltip: 'Mon panier',
             onPressed: () {
               Navigator.push(
                 context,
@@ -326,6 +333,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: _selectedIndex != 3 ? FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CartScreen()),
+          );
+        },
+        label: const Text('Passer commande'),
+        icon: const Icon(Icons.shopping_bag),
+        backgroundColor: const Color(0xFF5C6BC0),
+      ) : null,
     );
   }
 

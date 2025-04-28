@@ -357,6 +357,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               onPressed: _isLoading ? null : _placeOrder,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               child: _isLoading
                   ? const SizedBox(
