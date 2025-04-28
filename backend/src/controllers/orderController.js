@@ -523,6 +523,78 @@ exports.getUserOrderDetails = async (req, res) => {
 // Exporter le middleware de rate limiting
 exports.orderLimiter = orderLimiter;
 
+// Récupérer toutes les commandes (pour admin)
+exports.getAllOrders = async (req, res) => {
+  try {
+    console.log('Récupération de toutes les commandes (admin)');
+
+    // Vérifier si l'utilisateur est un admin
+    if (req.user.role !== 'Admin' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seuls les administrateurs peuvent voir toutes les commandes.'
+      });
+    }
+
+    const orders = await Order.find({})
+      .populate('produits.produitId', 'nom prix images description')
+      .populate('userId', 'nom email telephone')
+      .sort({ dateCommande: -1 });
+
+    console.log(`Nombre total de commandes trouvées: ${orders.length}`);
+
+    if (!orders || orders.length === 0) {
+      console.log('Aucune commande trouvée dans la base de données');
+      return res.status(200).json({
+        success: true,
+        message: 'Aucune commande trouvée',
+        commandes: []
+      });
+    }
+
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      numero: `CMD-${order._id.toString().slice(-6)}`,
+      date: order.dateCommande || order.createdAt,
+      statut: order.statut,
+      total: order.total,
+      client: order.userId ? {
+        nom: order.userId.nom || 'Client',
+        email: order.userId.email || '',
+        telephone: order.userId.telephone || ''
+      } : { nom: 'Client inconnu', email: '', telephone: '' },
+      produits: order.produits.map(item => ({
+        produitId: item.produitId ? item.produitId._id : item.produitId,
+        nom: item.produitId ? item.produitId.nom : 'Produit indisponible',
+        prix: item.prixUnitaire,
+        quantite: item.quantité,
+        images: item.produitId ? item.produitId.images : []
+      })),
+      adresseLivraison: order.adresseLivraison,
+      methodePaiement: order.methodePaiement || 'Non spécifié',
+      dateLivraison: order.dateLivraison,
+      paymentStatus: order.paymentStatus,
+      livreur: order.deliveryPersonId ? {
+        id: order.deliveryPersonId,
+        nom: order.deliveryPersonId.nom || 'Livreur assigné'
+      } : null
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Commandes récupérées avec succès',
+      commandes: formattedOrders
+    });
+  } catch (error) {
+    console.error(`Erreur de récupération des commandes: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des commandes',
+      error: error.message
+    });
+  }
+};
+
 // Traiter une commande (processOrderById)
 exports.processOrderById = async (req, res) => {
   try {

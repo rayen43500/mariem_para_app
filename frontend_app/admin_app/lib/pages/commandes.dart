@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/order_model.dart';
+import '../services/order_service.dart';
+import 'package:intl/intl.dart';
 
 class CommandesPage extends StatefulWidget {
   const CommandesPage({super.key});
@@ -8,82 +11,17 @@ class CommandesPage extends StatefulWidget {
 }
 
 class _CommandesPageState extends State<CommandesPage> with SingleTickerProviderStateMixin {
-  bool _isLoading = false;
+  bool _isLoading = true;
   late TabController _tabController;
-  final List<String> _filterOptions = ['Toutes', 'En cours', 'Livrées', 'Annulées'];
+  final List<String> _filterOptions = ['Toutes', 'En attente', 'En cours', 'Livrée', 'Annulée'];
   String _selectedStatus = 'Toutes';
   String _searchQuery = '';
-
-  final List<Map<String, dynamic>> _commandes = [
-    {
-      'id': 'CMD001',
-      'date': '15/05/2023',
-      'client': 'Thomas Martin',
-      'montant': 829.98,
-      'status': 'En cours',
-      'produits': [
-        {'nom': 'Smartphone XYZ Pro', 'quantite': 1, 'prix': 599.99},
-        {'nom': 'Écouteurs sans fil', 'quantite': 2, 'prix': 114.99},
-      ],
-      'adresse': '15 Rue des Lilas, 75001 Paris, France',
-      'telephone': '+33 6 12 34 56 78',
-      'paiement': 'Carte Bancaire',
-    },
-    {
-      'id': 'CMD002',
-      'date': '14/05/2023',
-      'client': 'Sophie Dupont',
-      'montant': 1299.99,
-      'status': 'Livrée',
-      'produits': [
-        {'nom': 'Laptop Pro 15"', 'quantite': 1, 'prix': 1299.99},
-      ],
-      'adresse': '8 Avenue Victor Hugo, 69002 Lyon, France',
-      'telephone': '+33 6 98 76 54 32',
-      'paiement': 'PayPal',
-    },
-    {
-      'id': 'CMD003',
-      'date': '12/05/2023',
-      'client': 'Jean Lefevre',
-      'montant': 179.98,
-      'status': 'Annulée',
-      'produits': [
-        {'nom': 'Enceinte Bluetooth', 'quantite': 2, 'prix': 89.99},
-      ],
-      'adresse': '25 Rue du Commerce, 33000 Bordeaux, France',
-      'telephone': '+33 6 45 67 89 01',
-      'paiement': 'Carte Bancaire',
-    },
-    {
-      'id': 'CMD004',
-      'date': '10/05/2023',
-      'client': 'Marie Bernard',
-      'montant': 599.49,
-      'status': 'En cours',
-      'produits': [
-        {'nom': 'Tablet Média', 'quantite': 1, 'prix': 349.99},
-        {'nom': 'Écouteurs sans fil', 'quantite': 1, 'prix': 249.50},
-      ],
-      'adresse': '12 Boulevard Pasteur, 59000 Lille, France',
-      'telephone': '+33 6 23 45 67 89',
-      'paiement': 'Carte Bancaire',
-    },
-    {
-      'id': 'CMD005',
-      'date': '08/05/2023',
-      'client': 'Lucas Dubois',
-      'montant': 1429.98,
-      'status': 'Livrée',
-      'produits': [
-        {'nom': 'Laptop Pro 15"', 'quantite': 1, 'prix': 1299.99},
-        {'nom': 'Enceinte Bluetooth', 'quantite': 1, 'prix': 129.99},
-      ],
-      'adresse': '5 Rue de la République, 13001 Marseille, France',
-      'telephone': '+33 6 34 56 78 90',
-      'paiement': 'Virement bancaire',
-    },
-  ];
+  
+  // Instance du service des commandes
+  final OrderService _orderService = OrderService();
+  
+  // Liste des commandes
+  List<Order> _commandes = [];
 
   @override
   void initState() {
@@ -96,6 +34,70 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
         });
       }
     });
+    
+    // Charger les commandes depuis l'API
+    _fetchOrders();
+  }
+  
+  // Méthode pour récupérer les commandes
+  Future<void> _fetchOrders() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final ordersData = await _orderService.getAllOrders();
+      
+      setState(() {
+        _commandes = ordersData.map((json) => Order.fromJson(json)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Afficher un message d'erreur
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des commandes: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  // Méthode pour mettre à jour le statut d'une commande
+  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      final success = await _orderService.updateOrderStatus(orderId, newStatus);
+      
+      if (success) {
+        // Mettre à jour la commande localement
+        setState(() {
+          final index = _commandes.indexWhere((order) => order.id == orderId);
+          if (index != -1) {
+            _commandes[index] = _commandes[index].copyWith(status: newStatus);
+          }
+        });
+        
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Statut de la commande mis à jour avec succès'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Afficher un message d'erreur
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la mise à jour du statut: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -107,9 +109,9 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final filteredOrders = _commandes.where((order) {
-      final matchesStatus = _selectedStatus == 'Toutes' || order['status'] == _selectedStatus;
-      final matchesSearch = order['id'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          order['client'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesStatus = _selectedStatus == 'Toutes' || order.status == _selectedStatus;
+      final matchesSearch = order.id.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          order.clientName.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     }).toList();
 
@@ -132,6 +134,14 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
           unselectedLabelColor: Colors.white70,
           tabs: _filterOptions.map((status) => Tab(text: status)).toList(),
         ),
+        actions: [
+          // Bouton de rafraîchissement
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchOrders,
+            tooltip: 'Rafraîchir',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -180,13 +190,16 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = filteredOrders[index];
-                          return _buildOrderCard(order, theme, isSmallScreen);
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _fetchOrders,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = filteredOrders[index];
+                            return _buildOrderCard(order, theme, isSmallScreen);
+                          },
+                        ),
                       ),
           ),
         ],
@@ -194,10 +207,13 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order, ThemeData theme, bool isSmallScreen) {
+  Widget _buildOrderCard(Order order, ThemeData theme, bool isSmallScreen) {
     // Couleur basée sur le statut
     Color statusColor;
-    switch (order['status']) {
+    switch (order.status) {
+      case 'En attente':
+        statusColor = Colors.orange;
+        break;
       case 'En cours':
         statusColor = Colors.blue;
         break;
@@ -209,6 +225,17 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
         break;
       default:
         statusColor = Colors.grey;
+    }
+
+    // Formatage de la date
+    String formattedDate;
+    try {
+      // Essayer de parser la date au format ISO
+      final date = DateTime.parse(order.date);
+      formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(date);
+    } catch (e) {
+      // Si ça échoue, utiliser la chaîne telle quelle
+      formattedDate = order.date;
     }
 
     return Card(
@@ -233,7 +260,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      order['id'],
+                      order.id,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -249,7 +276,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                     border: Border.all(color: statusColor.withOpacity(0.5)),
                   ),
                   child: Text(
-                    order['status'],
+                    order.status,
                     style: TextStyle(
                       color: statusColor,
                       fontWeight: FontWeight.bold,
@@ -260,158 +287,91 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
               ],
             ),
             const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Date',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      order['date'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Client',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      order['client'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Montant',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '€${order['montant'].toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
+            _buildInfoRow('Client', order.clientName, Icons.person),
+            _buildInfoRow('Date', formattedDate, Icons.calendar_today),
+            _buildInfoRow('Montant', '${order.montant.toStringAsFixed(2)} €', Icons.attach_money),
+            _buildInfoRow('Paiement', order.paiement, Icons.payment),
+            _buildInfoRow('Téléphone', order.telephone, Icons.phone),
+            _buildInfoRow('Adresse', order.adresse, Icons.location_on),
+            const Divider(height: 24),
+            Text(
               'Produits',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: order['produits'].length,
-              itemBuilder: (context, index) {
-                final product = order['produits'][index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+            ...order.produits.map((product) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: product.image != null && product.image!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  product.image!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
+                                ),
+                              )
+                            : const Icon(Icons.shopping_bag, color: Colors.grey),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          product['nom'],
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.nom,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '${product.quantite} x ${product.prix.toStringAsFixed(2)} €',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
-                        '${product['quantite']} × €${product['prix'].toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                        ),
+                        '${(product.prix * product.quantite).toStringAsFixed(2)} €',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
+                )),
+            const Divider(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () {
-                    _showOrderDetailsDialog(context, order);
-                  },
-                  icon: const Icon(Icons.visibility_outlined),
-                  label: const Text('Détails'),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: theme.colorScheme.primary),
-                  ),
-                ),
-                if (order['status'] == 'En cours')
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          _updateOrderStatus(order, 'Livrée');
-                        },
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Livrer'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.green,
-                          side: const BorderSide(color: Colors.green),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          _updateOrderStatus(order, 'Annulée');
-                        },
-                        icon: const Icon(Icons.cancel_outlined),
-                        label: const Text('Annuler'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                if (order['status'] == 'Livrée' || order['status'] == 'Annulée')
+                if (order.status != 'Livrée' && order.status != 'Annulée')
                   ElevatedButton.icon(
-                    onPressed: () {
-                      _showInvoiceDialog(context, order);
-                    },
-                    icon: const Icon(Icons.receipt),
-                    label: const Text('Facture'),
+                    onPressed: () => _showStatusUpdateDialog(order),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Modifier le statut'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                if (order.status != 'Annulée')
+                  ElevatedButton.icon(
+                    onPressed: () => _showDeliveryPersonDialog(order),
+                    icon: const Icon(Icons.delivery_dining),
+                    label: const Text('Assigner livreur'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -423,171 +383,167 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
     );
   }
 
-  void _updateOrderStatus(Map<String, dynamic> order, String newStatus) {
-    setState(() {
-      order['status'] = newStatus;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Commande ${order['id']} marquée comme $newStatus'),
-        backgroundColor: newStatus == 'Livrée' ? Colors.green : Colors.red,
-      ),
-    );
-  }
-
-  void _showOrderDetailsDialog(BuildContext context, Map<String, dynamic> order) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Détails de la commande ${order['id']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailItem('Client', order['client']),
-              _buildDetailItem('Date', order['date']),
-              _buildDetailItem('Statut', order['status']),
-              _buildDetailItem('Paiement', order['paiement']),
-              _buildDetailItem('Adresse de livraison', order['adresse']),
-              _buildDetailItem('Téléphone', order['telephone']),
-              const Divider(height: 24),
-              const Text(
-                'Produits commandés',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...order['produits'].map<Widget>((product) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(product['nom']),
-                      ),
-                      Text(
-                        '${product['quantite']} × €${product['prix'].toStringAsFixed(2)}',
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    '€${order['montant'].toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Fermer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailItem(String label, String value) {
+  Widget _buildInfoRow(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
         children: [
+          Icon(
+            icon,
+            size: 16,
+            color: Colors.grey.shade600,
+          ),
+          const SizedBox(width: 8),
           Text(
-            label,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
+            '$label: ',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black87),
             ),
           ),
         ],
       ),
     );
   }
-
-  void _showInvoiceDialog(BuildContext context, Map<String, dynamic> order) {
+  
+  // Boîte de dialogue pour modifier le statut d'une commande
+  void _showStatusUpdateDialog(Order order) {
+    final possibleStatuses = ['En attente', 'En cours', 'Livrée', 'Annulée'];
+    String selectedStatus = order.status;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.receipt),
-            const SizedBox(width: 8),
-            Text('Facture ${order['id']}'),
-          ],
-        ),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Text('Modifier le statut'),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('La facture a été générée et peut être téléchargée.'),
-              SizedBox(height: 16),
-              Text('Voulez-vous également envoyer la facture au client par email?'),
-            ],
+            children: possibleStatuses.map((status) => RadioListTile<String>(
+              title: Text(status),
+              value: status,
+              groupValue: selectedStatus,
+              onChanged: (value) {
+                setState(() {
+                  selectedStatus = value!;
+                });
+              },
+            )).toList(),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
             child: const Text('Annuler'),
           ),
-          ElevatedButton.icon(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Facture ${order['id']} téléchargée'),
-                ),
-              );
+              _updateOrderStatus(order.id, selectedStatus);
             },
-            icon: const Icon(Icons.download),
-            label: const Text('Télécharger'),
+            child: const Text('Confirmer'),
           ),
-          ElevatedButton.icon(
+        ],
+      ),
+    );
+  }
+  
+  // Boîte de dialogue pour assigner un livreur
+  void _showDeliveryPersonDialog(Order order) {
+    // Temporairement, nous allons utiliser une liste de livreurs statique
+    // Dans une future version, on récupérera la liste depuis l'API
+    final livreurs = [
+      {'id': '1', 'nom': 'Ahmed Benali'},
+      {'id': '2', 'nom': 'Sara Mansouri'},
+      {'id': '3', 'nom': 'Karim Touré'},
+    ];
+    
+    String? selectedLivreurId = order.livreurId;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Assigner un livreur'),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...livreurs.map((livreur) => RadioListTile<String>(
+                title: Text(livreur['nom']!),
+                value: livreur['id']!,
+                groupValue: selectedLivreurId,
+                onChanged: (value) {
+                  setState(() {
+                    selectedLivreurId = value;
+                  });
+                },
+              )),
+              if (order.livreurId != null)
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedLivreurId = null;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade100,
+                  ),
+                  child: const Text('Retirer l\'assignation'),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Facture envoyée au client par email'),
-                ),
-              );
+              
+              if (selectedLivreurId != null) {
+                // Trouver le nom du livreur sélectionné
+                final livreurName = livreurs.firstWhere(
+                  (l) => l['id'] == selectedLivreurId, 
+                  orElse: () => {'id': '', 'nom': ''}
+                )['nom'];
+                
+                // Mettre à jour l'assignation localement
+                setState(() {
+                  final index = _commandes.indexWhere((o) => o.id == order.id);
+                  if (index != -1) {
+                    _commandes[index] = _commandes[index].copyWith(
+                      livreurId: selectedLivreurId,
+                      livreurName: livreurName as String?,
+                    );
+                  }
+                });
+                
+                // Appeler l'API pour assigner le livreur
+                _orderService.assignDeliveryPerson(order.id, selectedLivreurId!).then((_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Livreur assigné avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }).catchError((e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur lors de l\'assignation du livreur: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                });
+              }
             },
-            icon: const Icon(Icons.email),
-            label: const Text('Envoyer'),
+            child: const Text('Confirmer'),
           ),
         ],
       ),
