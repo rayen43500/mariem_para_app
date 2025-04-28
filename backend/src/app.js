@@ -34,6 +34,15 @@ app.use('/api/panier', protect, panierRoutes);
 // Error handling
 app.use(errorHandler);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Database connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,

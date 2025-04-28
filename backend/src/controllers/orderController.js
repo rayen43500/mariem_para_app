@@ -76,13 +76,60 @@ exports.createOrder = async (req, res) => {
 // Récupérer les commandes de l'utilisateur
 exports.getUserOrders = async (req, res) => {
   try {
+    console.log(`Récupération des commandes pour l'utilisateur: ${req.user.id}`);
+    
+    // Recherche de commandes par ID utilisateur
     const orders = await Order.find({ userId: req.user.id })
-      .populate('produits.produitId', 'nom images')
+      .populate('produits.produitId', 'nom prix images description')
       .sort({ dateCommande: -1 });
-
-    res.json(orders);
+    
+    console.log(`Nombre de commandes trouvées: ${orders.length}`);
+    
+    // Si aucune commande n'est trouvée, retourner un tableau vide plutôt qu'une erreur
+    if (!orders || orders.length === 0) {
+      console.log('Aucune commande trouvée pour cet utilisateur');
+      return res.status(200).json({ 
+        success: true,
+        message: 'Aucune commande trouvée',
+        commandes: [] 
+      });
+    }
+    
+    // Formater les commandes pour la réponse
+    const formattedOrders = orders.map(order => {
+      return {
+        _id: order._id,
+        numero: `CMD-${order._id.toString().slice(-6)}`,
+        date: order.dateCommande,
+        statut: order.statut,
+        total: order.total,
+        produits: order.produits.map(item => ({
+          produitId: item.produitId ? item.produitId._id : item.produitId,
+          nom: item.produitId ? item.produitId.nom : 'Produit indisponible',
+          prix: item.prixUnitaire,
+          quantite: item.quantité,
+          images: item.produitId ? item.produitId.images : []
+        })),
+        adresseLivraison: order.adresseLivraison,
+        methodePaiement: order.methodePaiement || 'Non spécifié',
+        dateLivraison: order.dateLivraison,
+        paymentStatus: order.paymentStatus
+      };
+    });
+    
+    // Retourner les commandes formatées
+    return res.status(200).json({
+      success: true,
+      message: 'Commandes récupérées avec succès',
+      commandes: formattedOrders
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(`Erreur de récupération des commandes: ${error.message}`);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erreur lors de la récupération des commandes',
+      error: error.message
+    });
   }
 };
 
@@ -251,6 +298,220 @@ exports.createOrderFromSync = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Erreur lors de la création de la commande' 
+    });
+  }
+};
+
+// Récupérer les commandes de l'utilisateur pour mobile
+exports.getMobileUserOrders = async (req, res) => {
+  try {
+    console.log(`[MOBILE API] Récupération des commandes pour l'utilisateur: ${req.user.id}`);
+    
+    // Recherche de commandes par ID utilisateur dans la base de données
+    const orders = await Order.find({ userId: req.user.id })
+      .populate('produits.produitId', 'nom prix images description prixPromo stock')
+      .sort({ dateCommande: -1 });
+    
+    console.log(`[MOBILE API] Nombre de commandes trouvées: ${orders.length}`);
+    
+    // Si aucune commande n'est trouvée, retourner un tableau vide
+    if (!orders || orders.length === 0) {
+      console.log('[MOBILE API] Aucune commande trouvée pour cet utilisateur');
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Aucune commande trouvée',
+        commandes: []
+      });
+    }
+    
+    // Formater les commandes pour la réponse mobile
+    const mobileOrders = orders.map(order => {
+      return {
+        _id: order._id,
+        numero: `CMD-${order._id.toString().slice(-6)}`,
+        date: order.dateCommande,
+        statut: order.statut,
+        total: order.total,
+        produits: order.produits.map(item => ({
+          produitId: item.produitId ? item.produitId._id : item.produitId,
+          nom: item.produitId ? item.produitId.nom : 'Produit indisponible',
+          prix: item.prixUnitaire,
+          quantite: item.quantité,
+          images: item.produitId && item.produitId.images ? item.produitId.images : []
+        })),
+        adresseLivraison: order.adresseLivraison,
+        methodePaiement: order.methodePaiement || 'Non spécifié',
+        dateLivraison: order.dateLivraison,
+        dateCreation: order.createdAt,
+        paiement: {
+          statut: order.paymentStatus || 'Payé',
+          methode: order.methodePaiement || 'Carte bancaire'
+        },
+        livraison: {
+          adresse: order.adresseLivraison,
+          statut: order.statut,
+          date: order.dateLivraison
+        }
+      };
+    });
+    
+    // Retourner les commandes formatées pour mobile
+    return res.status(200).json({
+      success: true,
+      message: 'Commandes récupérées avec succès',
+      commandes: mobileOrders
+    });
+  } catch (error) {
+    console.error(`[MOBILE API] Erreur de récupération des commandes: ${error.message}`);
+    
+    // En cas d'erreur, retourner un message d'erreur
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des commandes',
+      error: error.message
+    });
+  }
+};
+
+// Récupérer le détail d'une commande pour mobile
+exports.getMobileOrderDetails = async (req, res) => {
+  try {
+    console.log(`[MOBILE API] Récupération des détails de la commande: ${req.params.id}`);
+    
+    const order = await Order.findById(req.params.id)
+      .populate('produits.produitId', 'nom prix images description prixPromo stock')
+      .populate('userId', 'nom email');
+    
+    // Vérifier si la commande existe
+    if (!order) {
+      console.log(`[MOBILE API] Commande non trouvée: ${req.params.id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Commande non trouvée'
+      });
+    }
+    
+    // Vérifier si l'utilisateur est autorisé à voir cette commande
+    if (order.userId && order.userId._id.toString() !== req.user.id && req.user.role !== 'Admin') {
+      console.log(`[MOBILE API] Accès non autorisé à la commande ${req.params.id} par l'utilisateur ${req.user.id}`);
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Vous n\'êtes pas autorisé à accéder à cette commande'
+      });
+    }
+    
+    // Formater la commande pour l'API mobile
+    const mobileOrderDetails = {
+      _id: order._id,
+      numero: `CMD-${order._id.toString().slice(-6)}`,
+      date: order.dateCommande,
+      statut: order.statut,
+      total: order.total,
+      produits: order.produits.map(item => ({
+        produitId: item.produitId ? item.produitId._id : item.produitId,
+        nom: item.produitId ? item.produitId.nom : 'Produit indisponible',
+        prix: item.prixUnitaire,
+        quantite: item.quantité,
+        images: item.produitId && item.produitId.images ? item.produitId.images : [],
+        description: item.produitId ? item.produitId.description : ''
+      })),
+      adresseLivraison: order.adresseLivraison,
+      methodePaiement: order.methodePaiement || 'Non spécifié',
+      dateLivraison: order.dateLivraison,
+      dateCreation: order.createdAt,
+      paiement: {
+        statut: order.paymentStatus || 'Payé',
+        methode: order.methodePaiement || 'Carte bancaire',
+        reference: order.paymentRef || `PAY-${order._id.toString().slice(-6)}`,
+        date: order.dateCommande
+      },
+      livraison: {
+        statut: order.statut,
+        suivi: order.trackingNumber || '',
+        transporteur: order.deliveryCompany || 'Standard',
+        dateExpedition: order.shipmentDate || null,
+        dateLivraison: order.dateLivraison || null
+      },
+      client: {
+        nom: order.userId && order.userId.nom ? order.userId.nom : 'Client',
+        email: order.userId && order.userId.email ? order.userId.email : '',
+        telephone: order.userId && order.userId.telephone ? order.userId.telephone : ''
+      }
+    };
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Détails de la commande récupérés avec succès',
+      commande: mobileOrderDetails
+    });
+  } catch (error) {
+    console.error(`[MOBILE API] Erreur lors de la récupération des détails de la commande: ${error.message}`);
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des détails de la commande',
+      error: error.message
+    });
+  }
+};
+
+// Récupérer une commande spécifique pour l'utilisateur
+exports.getUserOrderDetails = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    console.log(`Récupération des détails de la commande ${orderId} pour l'utilisateur: ${req.user.id}`);
+    
+    // Recherche d'une commande par ID et vérifie que l'utilisateur est le propriétaire
+    const order = await Order.findOne({ 
+      _id: orderId, 
+      userId: req.user.id 
+    }).populate('produits.produitId', 'nom prix images description')
+      .populate('deliveryPersonId', 'nom prenom telephone');
+    
+    if (!order) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Commande non trouvée ou vous n\'êtes pas autorisé à voir cette commande' 
+      });
+    }
+    
+    // Formater la commande pour la réponse
+    const formattedOrder = {
+      _id: order._id,
+      numero: `CMD-${order._id.toString().slice(-6)}`,
+      date: order.dateCommande,
+      statut: order.statut,
+      total: order.total,
+      produits: order.produits.map(item => ({
+        produitId: item.produitId ? item.produitId._id : item.produitId,
+        nom: item.produitId ? item.produitId.nom : 'Produit indisponible',
+        prix: item.prixUnitaire,
+        quantite: item.quantité,
+        images: item.produitId ? item.produitId.images : []
+      })),
+      adresseLivraison: order.adresseLivraison,
+      methodePaiement: order.methodePaiement || 'Non spécifié',
+      dateLivraison: order.dateLivraison,
+      paymentStatus: order.paymentStatus,
+      livreur: order.deliveryPersonId ? {
+        nom: `${order.deliveryPersonId.prenom} ${order.deliveryPersonId.nom}`,
+        telephone: order.deliveryPersonId.telephone
+      } : null
+    };
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Détails de la commande récupérés avec succès',
+      commande: formattedOrder
+    });
+  } catch (error) {
+    console.error(`Erreur de récupération des détails de la commande: ${error.message}`);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erreur lors de la récupération des détails de la commande',
+      error: error.message
     });
   }
 }; 

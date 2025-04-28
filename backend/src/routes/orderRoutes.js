@@ -21,10 +21,13 @@ router.use(protect);
 // Routes pour les clients
 router.post('/', orderController.createOrder);
 router.get('/', orderController.getUserOrders);
+router.get('/mobile/mes-commandes', orderController.getUserOrders); // Endpoint mobile spécifique
+router.get('/:id', validateObjectId(), orderController.getUserOrderDetails);
+router.get('/mobile/:id', validateObjectId(), orderController.getUserOrderDetails); // Endpoint mobile spécifique
 
 // Routes pour les administrateurs
-router.get('/:id', admin, validateObjectId(), orderController.getOrder);
-router.put('/:id', admin, validateObjectId(), orderController.updateOrderStatus);
+router.get('/admin/:id', admin, validateObjectId(), orderController.getOrder);
+router.put('/:id/status', admin, validateObjectId(), orderController.updateOrderStatus);
 router.put('/:id/assign', admin, validateObjectId(), orderController.assignDeliveryPerson);
 
 module.exports = router; 
