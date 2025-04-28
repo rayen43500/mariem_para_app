@@ -26,20 +26,53 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> _loadAuthState() async {
     try {
-      final token = await _storage.read(key: 'token');
+      _isLoading = true;
+      
+      // Obtenir le token via le service d'auth qui vérifie aussi sa validité
+      final validToken = await _authService.getToken();
       final userStr = await _storage.read(key: 'user');
       
-      if (token != null && userStr != null) {
-        _token = token;
+      if (validToken != null && userStr != null) {
+        print('📝 Token valide trouvé, utilisateur authentifié');
+        _token = validToken;
         _user = json.decode(userStr);
         _isAuthenticated = true;
+      } else {
+        print('📝 Token invalide ou expiré, utilisateur non authentifié');
+        _isAuthenticated = false;
+        _user = null;
+        _token = null;
+        
+        // Nettoyer les données stockées si nécessaire
+        if (validToken == null && await _storage.read(key: 'token') != null) {
+          await _storage.delete(key: 'token');
+          await _storage.delete(key: 'refreshToken');
+          await _storage.delete(key: 'user');
+        }
       }
     } catch (e) {
-      debugPrint('Error loading auth state: $e');
+      print('❌ Erreur lors du chargement de l\'état d\'authentification: $e');
+      _isAuthenticated = false;
+      _user = null;
+      _token = null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> checkAuthentication() async {
+    if (_isLoading) {
+      // Attendre que le chargement initial soit terminé
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    
+    if (!_isAuthenticated) {
+      // Tenter une vérification du token
+      return await _loadAuthState().then((_) => _isAuthenticated);
+    }
+    
+    return _isAuthenticated;
   }
 
   Future<void> login(String email, String password) async {

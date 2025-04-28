@@ -20,4 +20,13 @@ router.use(protect);
 // Route pour créer une commande
 router.post('/', orderController.createOrder);
 
+// Route pour récupérer les commandes de l'utilisateur
+router.get('/mes-commandes', orderController.getUserOrders);
+
+// Route pour récupérer les détails d'une commande
+router.get('/:id', orderController.getOrder);
+
+// Route pour annuler une commande
+router.put('/:id/annuler', orderController.updateOrderStatus);
+
 module.exports = router; 

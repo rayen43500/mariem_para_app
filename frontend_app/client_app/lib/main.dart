@@ -45,7 +45,15 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             initialRoute: auth.isAuthenticated ? '/' : '/login',
             routes: {
-              '/': (context) => const HomeScreen(),
+              '/': (context) {
+                // Récupérer les arguments de navigation
+                final args = ModalRoute.of(context)?.settings.arguments;
+                final goToCommandes = args is Map<String, dynamic> && args['goToCommandes'] == true;
+                
+                // Si on vient de se connecter depuis l'écran des commandes, 
+                // afficher directement l'onglet des commandes
+                return HomeScreen(initialIndex: goToCommandes ? 3 : 0);
+              },
               '/login': (context) => const LoginScreen(),
               '/profile': (context) => const ProfileScreen(),
             },

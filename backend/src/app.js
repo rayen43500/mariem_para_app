@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { errorHandler } = require('./middleware/error');
-const { auth } = require('./middleware');
+const { protect } = require('./middleware/auth');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -25,11 +25,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/cart', auth, cartRoutes);
-app.use('/api/orders', auth, orderRoutes);
+app.use('/api/cart', protect, cartRoutes);
+app.use('/api/orders', protect, orderRoutes);
 app.use('/api/promotions', promotionRoutes);
-app.use('/api/commandes', auth, commandesRoutes);
-app.use('/api/panier', auth, panierRoutes);
+app.use('/api/commandes', protect, commandesRoutes);
+app.use('/api/panier', protect, panierRoutes);
 
 // Error handling
 app.use(errorHandler);

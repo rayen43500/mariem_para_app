@@ -9,17 +9,23 @@ import '../services/cart_service.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'category_screen.dart';
+import 'orders_screen.dart';
 import '../theme/app_theme.dart' as theme;
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+  
+  const HomeScreen({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   final CategoryService _categoryService = CategoryService();
   final ProductService _productService = ProductService();
   final PromotionService _promotionService = PromotionService();
@@ -34,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     _loadData();
   }
 
@@ -242,10 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Mes commandes'),
               selected: _selectedIndex == 3,
               onTap: () {
-                setState(() {
-                  _selectedIndex = 3;
-                });
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OrdersScreen(),
+                  ),
+                );
               },
             ),
             const Divider(),
@@ -329,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return _buildPromotionsTab();
       case 3:
-        return _buildCartTab();
+        return _buildOrdersTab();
       case 4:
         return _buildProfileTab();
       case 5:
@@ -548,83 +557,94 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         children: [
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.85,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: _categories.length > 6 ? 6 : _categories.length,
-            itemBuilder: (context, index) {
-              final category = _categories[index];
-              final colorName = category['colorName'] ?? 'blue';
-              final iconName = category['iconName'] ?? 'category';
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculer le nombre de colonnes en fonction de la largeur disponible
+              final double width = constraints.maxWidth;
+              final int crossAxisCount = width > 600 ? 4 : (width > 400 ? 3 : 2);
               
-              Color cardColor = _getCategoryColor(colorName);
-              IconData iconData = _getCategoryIcon(iconName);
-              
-              return InkWell(
-                onTap: () => _navigateToCategoryScreen(category),
-                borderRadius: BorderRadius.circular(8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cardColor.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        cardColor.withOpacity(0.9),
-                        cardColor.withOpacity(0.7)
-                      ],
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(iconData, color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        category['nom'] ?? 'Catégorie',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${category['productCount'] ?? '0'} produits',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
                 ),
+                itemCount: _categories.length > 6 ? 6 : _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final colorName = category['colorName'] ?? 'blue';
+                  final iconName = category['iconName'] ?? 'category';
+                  
+                  Color cardColor = _getCategoryColor(colorName);
+                  IconData iconData = _getCategoryIcon(iconName);
+                  
+                  return InkWell(
+                    onTap: () => _navigateToCategoryScreen(category),
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cardColor.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            cardColor.withOpacity(0.9),
+                            cardColor.withOpacity(0.7)
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(iconData, color: Colors.white, size: 28),
+                          ),
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              category['nom'] ?? 'Catégorie',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${category['productCount'] ?? '0'} produits',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
-            },
+            }
           ),
           if (_categories.length > 6)
             Padding(
@@ -668,166 +688,180 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: featuredProducts.length,
-          itemBuilder: (context, index) {
-            final product = featuredProducts[index];
-            final isOnSale = product['prixPromo'] != null || product['prixFinal'] != null;
-            final hasStock = (product['stock'] ?? 0) > 0;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Calculer le nombre de colonnes en fonction de la largeur disponible
+            final double width = constraints.maxWidth;
+            final int crossAxisCount = width > 600 ? 3 : 2;
+            // Ajuster le ratio en fonction du nombre de colonnes
+            final double childAspectRatio = width > 600 ? 0.8 : 0.7;
             
-            return InkWell(
-              onTap: () => _showProductDetails(product),
-              borderRadius: BorderRadius.circular(8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: featuredProducts.length,
+              itemBuilder: (context, index) {
+                final product = featuredProducts[index];
+                final isOnSale = product['prixPromo'] != null || product['prixFinal'] != null;
+                final hasStock = (product['stock'] ?? 0) > 0;
+                
+                return InkWell(
+                  onTap: () => _showProductDetails(product),
                   borderRadius: BorderRadius.circular(8.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image et badge promos
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8.0),
-                            topRight: Radius.circular(8.0),
-                          ),
-                          child: _buildProductImage(product),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
-                        if (isOnSale)
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF5252), // AccentColor
-                                borderRadius: BorderRadius.circular(4.0),
-                              ),
-                              child: const Text(
-                                'PROMO',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (!hasStock)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Image et badge promos
+                        Expanded(
+                          flex: 5,
+                          child: Stack(
+                            children: [
+                              ClipRRect(
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(8.0),
                                   topRight: Radius.circular(8.0),
                                 ),
+                                child: _buildProductImage(product),
                               ),
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE57373), // ErrorColor
-                                    borderRadius: BorderRadius.circular(4.0),
-                                  ),
-                                  child: const Text(
-                                    'RUPTURE',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                              if (isOnSale)
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF5252), // AccentColor
+                                      borderRadius: BorderRadius.circular(4.0),
+                                    ),
+                                    child: const Text(
+                                      'PROMO',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              if (!hasStock)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(8.0),
+                                        topRight: Radius.circular(8.0),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE57373), // ErrorColor
+                                          borderRadius: BorderRadius.circular(4.0),
+                                        ),
+                                        child: const Text(
+                                          'RUPTURE',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Informations produit
+                        Expanded(
+                          flex: 6,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product['nom'] ?? 'Produit',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                _buildPriceSection(product),
+                                const Spacer(),
+                                // Bouton Ajouter au panier
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: hasStock ? () => _addToCart(product) : null,
+                                    icon: const Icon(Icons.shopping_cart_outlined, size: 16),
+                                    label: const Text('Ajouter'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      visualDensity: VisualDensity.compact,
+                                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // Bouton Voir détails
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton(
+                                    onPressed: () => _showProductDetails(product),
+                                    child: const Text('Détails'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: AppTheme.primaryColor,
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      visualDensity: VisualDensity.compact,
+                                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
                       ],
                     ),
-                    
-                    // Informations produit
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product['nom'] ?? 'Produit',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          _buildPriceSection(product),
-                          const SizedBox(height: 8),
-                          // Bouton Ajouter au panier
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: hasStock ? () => _addToCart(product) : null,
-                              icon: const Icon(Icons.shopping_cart_outlined, size: 16),
-                              label: const Text('Ajouter au panier'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // Bouton Voir détails
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton.icon(
-                              onPressed: () => _showProductDetails(product),
-                              icon: const Icon(Icons.info_outline, size: 16),
-                              label: const Text('Voir détails'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.primaryColor,
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
-          },
+          }
         ),
         if (_products.length > 4)
           Padding(
@@ -858,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
       : 'https://via.placeholder.com/300x300?text=Produit';
     
     return SizedBox(
-      height: 140,
+      height: double.infinity,
       width: double.infinity,
       child: Image.network(
         imageUrl,
@@ -1072,19 +1106,27 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: _categories.isEmpty 
               ? const Center(child: Text('Aucune catégorie disponible'))
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.9,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    return _buildCategoryCard(category);
-                  },
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Calculer le nombre de colonnes en fonction de la largeur disponible
+                    final double width = constraints.maxWidth;
+                    final int crossAxisCount = width > 800 ? 4 : (width > 600 ? 3 : 2);
+                    
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: 0.9,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final category = _categories[index];
+                        return _buildCategoryCard(category);
+                      },
+                    );
+                  }
                 ),
         ),
       ],
@@ -1140,16 +1182,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF212121),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF212121),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -1175,13 +1220,17 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _promotions.length,
-      itemBuilder: (context, index) {
-        final promotion = _promotions[index];
-        return _buildPromotionCard(promotion);
-      },
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _promotions.length,
+        itemBuilder: (context, index) {
+          final promotion = _promotions[index];
+          return _buildPromotionCard(promotion);
+        },
+      ),
     );
   }
 
@@ -1236,6 +1285,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (reduction != null)
@@ -1265,6 +1316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Color(0xFF757575),
                       fontSize: 14,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
                 
@@ -1276,11 +1329,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       const Icon(Icons.event, size: 16, color: Color(0xFF757575)),
                       const SizedBox(width: 4),
-                      Text(
-                        'Valable jusqu\'au ${_formatDate(endDate)}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF757575),
+                      Expanded(
+                        child: Text(
+                          'Valable jusqu\'au ${_formatDate(endDate)}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF757575),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1292,7 +1348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (code.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F7FF),
                       borderRadius: BorderRadius.circular(8.0),
@@ -1301,9 +1357,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         const Text(
-                          'Code promo: ',
+                          'Code: ',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
+                            fontSize: 14,
                           ),
                         ),
                         Expanded(
@@ -1312,9 +1369,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1,
+                              fontSize: 14,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 4),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 20),
                           onPressed: () {
@@ -1373,9 +1433,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildOrdersTab() {
-    return const Center(
-      child: Text('Mes commandes - À venir'),
-    );
+    return const OrdersScreen();
   }
 
   Widget _buildCartTab() {
@@ -1403,97 +1461,114 @@ class _HomeScreenState extends State<HomeScreen> {
     final promotion = _promotions[0];
     final hasImage = promotion['image'] != null && promotion['image'].toString().isNotEmpty;
     
-    return Container(
-      height: 160,
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5C6BC0).withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF5C6BC0),
-            Color(0xFF8E99F3),
-          ],
-        ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Image de fond (si disponible)
-          if (hasImage)
-            Opacity(
-              opacity: 0.4,
-              child: Image.network(
-                promotion['image'],
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Ajuster la hauteur en fonction de la largeur disponible
+        final double bannerHeight = constraints.maxWidth < 600 ? 120 : 160;
+        final double fontSize = constraints.maxWidth < 600 ? 18 : 22;
+        
+        return Container(
+          height: bannerHeight,
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF5C6BC0).withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-          
-          // Contenu
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Titre de la promotion
-                Text(
-                  promotion['nom'] ?? 'Offre spéciale',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Description (si disponible)
-                if (promotion['description'] != null)
-                  Text(
-                    promotion['description'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                
-                const SizedBox(height: 16),
-                
-                // Bouton d'action
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedIndex = 2; // Aller à l'onglet promotions
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF5C6BC0),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  ),
-                  child: const Text('Voir les offres'),
-                ),
+            ],
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF5C6BC0),
+                Color(0xFF8E99F3),
               ],
             ),
           ),
-        ],
-      ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Image de fond (si disponible)
+              if (hasImage)
+                Opacity(
+                  opacity: 0.4,
+                  child: Image.network(
+                    promotion['image'],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(),
+                  ),
+                ),
+              
+              // Contenu
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Titre de la promotion
+                    Text(
+                      promotion['nom'] ?? 'Offre spéciale',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // Description (si disponible et si l'écran est assez grand)
+                    if (promotion['description'] != null && constraints.maxWidth >= 400)
+                      Text(
+                        promotion['description'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                        maxLines: constraints.maxWidth < 600 ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Bouton d'action
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedIndex = 2; // Aller à l'onglet promotions
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF5C6BC0),
+                        elevation: 0,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: constraints.maxWidth < 600 ? 12 : 20, 
+                          vertical: constraints.maxWidth < 600 ? 6 : 10
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: constraints.maxWidth < 600 ? 12 : 14,
+                          fontWeight: FontWeight.bold
+                        ),
+                      ),
+                      child: const Text('Voir les offres'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 
@@ -1594,6 +1669,9 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final screenSize = MediaQuery.of(context).size;
+        final isSmallScreen = screenSize.width < 600;
+        
         return Container(
           padding: const EdgeInsets.all(20),
           constraints: BoxConstraints(
@@ -1628,101 +1706,74 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 16),
               
-              // Image et prix
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 100,
-                      height: 100,
-                      child: Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image_not_supported, size: 40),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  
-                  // Prix et disponibilité
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Prix
-                        Row(
-                          children: [
-                            Text(
-                              '${finalPrice.toStringAsFixed(2)} €',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isOnSale ? Colors.red : const Color(0xFF212121),
+              // Image et prix - adaptatif selon la taille d'écran
+              isSmallScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image centrée pour petit écran
+                      Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 150,
+                            height: 150,
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.image_not_supported, size: 40),
                               ),
-                            ),
-                            if (isOnSale) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '${price.toStringAsFixed(2)} €',
-                                style: const TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Color(0xFF757575),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // Disponibilité
-                        Row(
-                          children: [
-                            Icon(
-                              hasStock ? Icons.check_circle : Icons.cancel,
-                              color: hasStock ? Colors.green : Colors.red,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              hasStock ? 'En stock' : 'Rupture de stock',
-                              style: TextStyle(
-                                color: hasStock ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Voir le produit complet
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            _navigateToProductDetail(product);
-                          },
-                          child: Text(
-                            'Voir la fiche produit complète',
-                            style: TextStyle(
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Prix et disponibilité
+                      _buildProductDetailsPriceSection(
+                        price: price,
+                        finalPrice: finalPrice,
+                        isOnSale: isOnSale,
+                        hasStock: hasStock,
+                        product: product
+                      ),
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.image_not_supported, size: 40),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      
+                      // Prix et disponibilité
+                      Expanded(
+                        child: _buildProductDetailsPriceSection(
+                          price: price,
+                          finalPrice: finalPrice,
+                          isOnSale: isOnSale,
+                          hasStock: hasStock,
+                          product: product
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
               
               const SizedBox(height: 16),
               const Divider(),
@@ -1781,6 +1832,84 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+  
+  // Widget pour la section prix des détails produit
+  Widget _buildProductDetailsPriceSection({
+    required double price,
+    required double finalPrice,
+    required bool isOnSale,
+    required bool hasStock,
+    required Map<String, dynamic> product
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Prix
+        Row(
+          children: [
+            Text(
+              '${finalPrice.toStringAsFixed(2)} €',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isOnSale ? Colors.red : const Color(0xFF212121),
+              ),
+            ),
+            if (isOnSale) ...[
+              const SizedBox(width: 8),
+              Text(
+                '${price.toStringAsFixed(2)} €',
+                style: const TextStyle(
+                  decoration: TextDecoration.lineThrough,
+                  color: Color(0xFF757575),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // Disponibilité
+        Row(
+          children: [
+            Icon(
+              hasStock ? Icons.check_circle : Icons.cancel,
+              color: hasStock ? Colors.green : Colors.red,
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              hasStock ? 'En stock' : 'Rupture de stock',
+              style: TextStyle(
+                color: hasStock ? Colors.green : Colors.red,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Voir le produit complet
+        InkWell(
+          onTap: () {
+            Navigator.pop(context);
+            _navigateToProductDetail(product);
+          },
+          child: Text(
+            'Voir la fiche produit complète',
+            style: TextStyle(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
+      ],
     );
   }
 } 

@@ -33,20 +33,35 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       try {
-        await context.read<AuthProvider>().login(
+        print('🔐 Tentative de connexion...');
+        final authProvider = context.read<AuthProvider>();
+        await authProvider.login(
           _emailController.text,
           _passwordController.text,
         );
         
+        print('🔐 Connexion réussie!');
+        
+        // Vérifier si nous avons été redirigés depuis la page des commandes
+        final hasCommandesRoute = ModalRoute.of(context)?.settings.arguments is Map<String, dynamic> &&
+                               (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['fromCommandes'] == true;
+        
+        print('🔐 Redirection depuis commandes: $hasCommandesRoute');
+        
         // Assurez-vous que la navigation se fait vers la page d'accueil client
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/');
+          Navigator.pushReplacementNamed(
+            context, 
+            '/',
+            arguments: hasCommandesRoute ? {'goToCommandes': true} : null
+          );
         }
       } catch (e) {
+        print('❌ Erreur de connexion: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString()),
+              content: Text('Erreur: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
