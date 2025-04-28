@@ -523,6 +523,36 @@ exports.getUserOrderDetails = async (req, res) => {
 // Exporter le middleware de rate limiting
 exports.orderLimiter = orderLimiter;
 
+// Récupérer le nombre total de commandes
+exports.getOrderCount = async (req, res) => {
+  try {
+    console.log('Comptage des commandes totales');
+    
+    // Vérifier si l'utilisateur est un admin
+    if (req.user.role !== 'Admin' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seuls les administrateurs peuvent accéder à ces statistiques.'
+      });
+    }
+    
+    const count = await Order.countDocuments();
+    console.log(`Nombre total de commandes: ${count}`);
+    
+    return res.status(200).json({
+      success: true,
+      count: count
+    });
+  } catch (error) {
+    console.error(`Erreur lors du comptage des commandes: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors du comptage des commandes',
+      error: error.message
+    });
+  }
+};
+
 // Récupérer toutes les commandes (pour admin)
 exports.getAllOrders = async (req, res) => {
   try {

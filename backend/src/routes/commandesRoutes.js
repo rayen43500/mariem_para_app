@@ -29,6 +29,9 @@ router.use(protect);
 // Route admin pour récupérer toutes les commandes (nécessite un rôle admin)
 router.get('/all', admin, orderController.getAllOrders);
 
+// Route pour compter le nombre total de commandes (pour le dashboard)
+router.get('/count', admin, orderController.getOrderCount);
+
 // Route pour créer une commande
 router.post('/', orderController.createOrder);
 
