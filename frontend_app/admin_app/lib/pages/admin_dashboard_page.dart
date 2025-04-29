@@ -74,7 +74,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
         description: 'Suivi des prescriptions',
       ),
       CardItem(
-        title: 'Client',
+        title: 'Utilisateurs',
         icon: Icons.people_outline,
         color: const Color(0xFF9C27B0),
         secondaryColor: const Color(0xFFE1BEE7),

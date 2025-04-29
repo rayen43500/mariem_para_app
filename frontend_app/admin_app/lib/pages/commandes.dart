@@ -507,7 +507,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                         children: [
                           ...livreurs.map((livreur) => RadioListTile<String>(
                             title: Text(livreur['name']),
-                            subtitle: Text('${livreur['email']} - ${livreur['phone']}'),
+                            subtitle: Text(livreur['phone'] ?? ''),
                             value: livreur['_id'],
                             groupValue: selectedLivreurId,
                             onChanged: (value) {

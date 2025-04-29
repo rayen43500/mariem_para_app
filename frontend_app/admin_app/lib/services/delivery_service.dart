@@ -451,9 +451,8 @@ class DeliveryService {
         // Transformer les données pour le format attendu dans l'UI
         return livreurs.map((user) => {
           '_id': user['_id'],
-          'name': user['nom'],
-          'email': user['email'],
-          'phone': user['telephone'],
+          'name': user['nom'] ?? '',
+          'phone': user['telephone'] ?? '',
           'isActive': user['isActive'] ?? true,
           'status': user['isActive'] == true ? 'Disponible' : 'Indisponible',
         }).toList();
