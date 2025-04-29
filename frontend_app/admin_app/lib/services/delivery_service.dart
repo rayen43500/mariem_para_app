@@ -403,4 +403,68 @@ class DeliveryService {
       },
     ];
   }
+
+  // Récupérer les livreurs pour assigner à une commande
+  Future<List<dynamic>> getLivreursForAssignment() async {
+    try {
+      final token = await _authService.getToken();
+      
+      if (token == null) {
+        print('❌ Token d\'authentification non trouvé');
+        throw Exception('Authentification requise. Veuillez vous reconnecter.');
+      }
+      
+      print('🔍 Récupération de tous les utilisateurs avec rôle livreur');
+      
+      // Récupérer tous les utilisateurs avec le rôle livreur - sans filtrer par disponibilité
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/users?role=Livreur'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      print('📊 Statut de réponse: ${response.statusCode}');
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = json.decode(response.body);
+        
+        print('📦 Données reçues avec succès');
+        
+        List<dynamic> livreurs = [];
+        
+        // Adapter le parsing en fonction de la structure de réponse
+        if (data is List) {
+          // Filtrer pour ne garder que les utilisateurs avec rôle Livreur
+          livreurs = data.where((user) => user['role'] == 'Livreur').toList();
+        } else if (data['users'] != null) {
+          // Filtrer pour ne garder que les utilisateurs avec rôle Livreur
+          livreurs = (data['users'] as List).where((user) => user['role'] == 'Livreur').toList();
+        } else {
+          print('⚠️ Format de réponse inattendu, utilisation des données de test');
+          return _getTestDeliveryPersons();
+        }
+        
+        print('✅ ${livreurs.length} utilisateurs avec rôle livreur récupérés');
+        
+        // Transformer les données pour le format attendu dans l'UI
+        return livreurs.map((user) => {
+          '_id': user['_id'],
+          'name': user['nom'],
+          'email': user['email'],
+          'phone': user['telephone'],
+          'isActive': user['isActive'] ?? true,
+          'status': user['isActive'] == true ? 'Disponible' : 'Indisponible',
+        }).toList();
+      } else {
+        print('⚠️ Échec de récupération des utilisateurs, utilisation des données de test');
+        return _getTestDeliveryPersons();
+      }
+    } catch (e) {
+      print('❌ Exception lors de la récupération des livreurs: $e');
+      print('⚠️ Utilisation des données de test');
+      return _getTestDeliveryPersons();
+    }
+  }
 } 

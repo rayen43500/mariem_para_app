@@ -50,9 +50,10 @@ const orderSchema = new mongoose.Schema({
     enum: ['En attente', 'Payée', 'Annulée'],
     default: 'En attente'
   },
-  deliveryPersonId: {
+  livreurId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'DeliveryPerson'
+    ref: 'User',
+    required: false
   }
 }, {
   timestamps: true

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/order_model.dart';
 import '../services/order_service.dart';
+import '../services/delivery_service.dart';
 import 'package:intl/intl.dart';
 
 class CommandesPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
   
   // Instance du service des commandes
   final OrderService _orderService = OrderService();
+  final DeliveryService _deliveryService = DeliveryService();
   
   // Liste des commandes
   List<Order> _commandes = [];
@@ -460,98 +462,143 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
   
   // Boîte de dialogue pour assigner un livreur
   void _showDeliveryPersonDialog(Order order) {
-    // Temporairement, nous allons utiliser une liste de livreurs statique
-    // Dans une future version, on récupérera la liste depuis l'API
-    final livreurs = [
-      {'id': '1', 'nom': 'Ahmed Benali'},
-      {'id': '2', 'nom': 'Sara Mansouri'},
-      {'id': '3', 'nom': 'Karim Touré'},
-    ];
-    
     String? selectedLivreurId = order.livreurId;
+    bool isLoading = true;
+    List<dynamic> livreurs = [];
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Assigner un livreur'),
-        content: StatefulBuilder(
-          builder: (context, setState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...livreurs.map((livreur) => RadioListTile<String>(
-                title: Text(livreur['nom']!),
-                value: livreur['id']!,
-                groupValue: selectedLivreurId,
-                onChanged: (value) {
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Charger les livreurs au premier affichage
+          if (isLoading) {
+            // Utiliser la méthode compatible avec le modèle DeliveryPerson du backend
+            _deliveryService.getLivreursForAssignment().then((fetchedLivreurs) {
+              setState(() {
+                livreurs = fetchedLivreurs;
+                isLoading = false;
+              });
+              print('✅ ${livreurs.length} livreurs récupérés pour assignation');
+            }).catchError((error) {
+              setState(() {
+                isLoading = false;
+              });
+              print('❌ Erreur lors du chargement des livreurs: $error');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Erreur lors du chargement des livreurs: $error'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            });
+          }
+          
+          return AlertDialog(
+            title: const Text('Assigner un livreur'),
+            content: SizedBox(
+              width: 400,
+              child: isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : livreurs.isEmpty
+                  ? const Center(child: Text('Aucun livreur disponible'))
+                  : SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ...livreurs.map((livreur) => RadioListTile<String>(
+                            title: Text(livreur['name']),
+                            subtitle: Text('${livreur['email']} - ${livreur['phone']}'),
+                            value: livreur['_id'],
+                            groupValue: selectedLivreurId,
+                            onChanged: (value) {
+                              setState(() {
+                                selectedLivreurId = value;
+                              });
+                            },
+                          )),
+                          if (order.livreurId != null)
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  selectedLivreurId = null;
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade100,
+                              ),
+                              child: const Text('Retirer l\'assignation'),
+                            ),
+                        ],
+                      ),
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading || livreurs.isEmpty ? null : () {
+                  Navigator.pop(context);
+                  
+                  if (selectedLivreurId == null) {
+                    return;
+                  }
+
+                  // Trouver le livreur sélectionné
+                  final livreur = livreurs.firstWhere(
+                    (l) => l['_id'] == selectedLivreurId, 
+                    orElse: () => {'_id': '', 'name': ''}
+                  );
+                  
+                  print('🔍 Assigner livreur: ${livreur['name']} (ID: ${livreur['_id']}) à la commande: ${order.id}');
+                  
+                  // Mettre à jour l'assignation localement
                   setState(() {
-                    selectedLivreurId = value;
+                    final index = _commandes.indexWhere((o) => o.id == order.id);
+                    if (index != -1) {
+                      _commandes[index] = _commandes[index].copyWith(
+                        livreurId: selectedLivreurId,
+                        livreurName: livreur['name'],
+                      );
+                    }
+                  });
+
+                  // Appeler l'API pour assigner le livreur
+                  _orderService.assignDeliveryPerson(order.id, selectedLivreurId!).then((success) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Livreur assigné avec succès'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Échec de l\'assignation du livreur'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  }).catchError((e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors de l\'assignation du livreur: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   });
                 },
-              )),
-              if (order.livreurId != null)
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedLivreurId = null;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade100,
-                  ),
-                  child: const Text('Retirer l\'assignation'),
-                ),
+                child: const Text('Confirmer'),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              
-              if (selectedLivreurId != null) {
-                // Trouver le nom du livreur sélectionné
-                final livreurName = livreurs.firstWhere(
-                  (l) => l['id'] == selectedLivreurId, 
-                  orElse: () => {'id': '', 'nom': ''}
-                )['nom'];
-                
-                // Mettre à jour l'assignation localement
-                setState(() {
-                  final index = _commandes.indexWhere((o) => o.id == order.id);
-                  if (index != -1) {
-                    _commandes[index] = _commandes[index].copyWith(
-                      livreurId: selectedLivreurId,
-                      livreurName: livreurName as String?,
-                    );
-                  }
-                });
-                
-                // Appeler l'API pour assigner le livreur
-                _orderService.assignDeliveryPerson(order.id, selectedLivreurId!).then((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Livreur assigné avec succès'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }).catchError((e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur lors de l\'assignation du livreur: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                });
-              }
-            },
-            child: const Text('Confirmer'),
-          ),
-        ],
+          );
+        }
       ),
     );
   }
+  
+  // Fonction utilitaire pour limiter la longueur d'une chaîne
+  int min(int a, int b) => a < b ? a : b;
 }

@@ -40,25 +40,42 @@ class OrderService {
         if (data['success'] == true || data['commandes'] != null || data['data'] != null) {
           List<dynamic> commandes = data['commandes'] ?? data['data'] ?? [];
           print('📦 ${commandes.length} commandes récupérées');
-          
-          // Si aucune commande n'a été récupérée, utiliser des données de test
-          if (commandes.isEmpty) {
-            print('⚠️ Aucune commande trouvée, utilisation des données de test');
-            return _getTestOrders();
-          }
-          
           return commandes;
         } else {
           print('❌ Réponse API incorrecte: ${response.body}');
-          return _getTestOrders();
+          throw Exception('Format de réponse incorrect');
         }
+      } else if (response.statusCode == 404) {
+        // Essayer l'autre endpoint si le premier n'est pas trouvé
+        final response2 = await http.get(
+          Uri.parse('$baseUrl/api/orders'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+        
+        print('📦 Réponse du serveur (endpoint 2): ${response2.statusCode}');
+        
+        if (response2.statusCode >= 200 && response2.statusCode < 300) {
+          final data = json.decode(response2.body);
+          
+          if (data['success'] == true || data['orders'] != null || data['data'] != null) {
+            List<dynamic> commandes = data['orders'] ?? data['data'] ?? [];
+            print('📦 ${commandes.length} commandes récupérées via endpoint /orders');
+            return commandes;
+          }
+        }
+        
+        print('❌ Les deux endpoints ont échoué');
+        throw Exception('Impossible de récupérer les commandes');
       } else {
         print('❌ Erreur API: ${response.statusCode} ${response.body}');
-        return _getTestOrders();
+        throw Exception('Erreur serveur: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ Exception lors de la récupération des commandes: $e');
-      return _getTestOrders();
+      throw Exception('Échec de récupération des commandes: $e');
     }
   }
   
@@ -131,11 +148,9 @@ class OrderService {
     ];
   }
   
-  // Récupérer le détail d'une commande
-  Future<Map<String, dynamic>> getOrderDetails(String orderId) async {
+  // Récupérer une commande par son ID
+  Future<Map<String, dynamic>?> getOrderById(String orderId) async {
     try {
-      print('📄 Tentative de récupération des détails de la commande $orderId');
-      
       // Récupérer le token via le service d'authentification
       final token = await _authService.getToken();
       
@@ -144,34 +159,60 @@ class OrderService {
         throw Exception('Token non trouvé. Veuillez vous connecter.');
       }
       
-      // Utiliser l'endpoint pour les détails de commande - correction de l'URL
+      // Si l'ID de commande contient un tiret, le supprimer
+      final cleanOrderId = orderId.replaceAll('-', '');
+      print('🔍 Récupération des détails de la commande: $cleanOrderId');
+      
+      // Premier essai avec endpoint commandes
       final response = await http.get(
-        Uri.parse('$baseUrl/api/commandes/$orderId'),
+        Uri.parse('$baseUrl/api/commandes/$cleanOrderId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
       
-      print('📄 Réponse du serveur: ${response.statusCode}');
+      print('🔍 Réponse du serveur: ${response.statusCode}');
       
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = json.decode(response.body);
         
-        if (data['success'] == true && (data['commande'] != null || data['data'] != null)) {
-          print('📄 Détails de la commande récupérés avec succès');
-          return data['commande'] ?? data['data'];
+        if (data['success'] == true || data['commande'] != null || data['data'] != null) {
+          Map<String, dynamic> commande = data['commande'] ?? data['data'] ?? {};
+          print('🔍 Détails de la commande récupérés avec succès');
+          return commande;
         } else {
-          print('❌ Réponse API incorrecte ou commande non trouvée: ${response.body}');
-          throw Exception('Commande non trouvée');
+          print('❌ Format de réponse incorrect: ${response.body}');
         }
-      } else {
-        print('❌ Erreur API: ${response.statusCode} ${response.body}');
-        throw Exception('Erreur de serveur: ${response.statusCode}');
+      } 
+      
+      // Si le premier essai a échoué, essayer l'autre endpoint
+      print('🔍 Tentative avec l\'endpoint orders');
+      final response2 = await http.get(
+        Uri.parse('$baseUrl/api/orders/$cleanOrderId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      print('🔍 Réponse du serveur (endpoint 2): ${response2.statusCode}');
+      
+      if (response2.statusCode >= 200 && response2.statusCode < 300) {
+        final data = json.decode(response2.body);
+        
+        if (data['success'] == true || data['order'] != null || data['data'] != null) {
+          Map<String, dynamic> commande = data['order'] ?? data['data'] ?? {};
+          print('🔍 Détails de la commande récupérés avec succès via endpoint /orders');
+          return commande;
+        }
       }
+      
+      print('❌ Impossible de récupérer les détails de la commande');
+      throw Exception('Commande non trouvée: $orderId');
     } catch (e) {
       print('❌ Exception lors de la récupération des détails de la commande: $e');
-      rethrow;
+      throw Exception('Échec de récupération des détails: $e');
     }
   }
   
@@ -313,28 +354,79 @@ class OrderService {
   // Assigner un livreur à une commande
   Future<bool> assignDeliveryPerson(String orderId, String livreurId) async {
     try {
-      // Corps de la requête
-      final Map<String, dynamic> requestBody = {
-        'livreurId': livreurId
-      };
+      // Formater l'ID si nécessaire
+      String cleanOrderId = orderId;
+      if (orderId.contains('-')) {
+        final parts = orderId.split('-');
+        if (parts.length > 1) {
+          cleanOrderId = parts[1]; // Prendre la deuxième partie comme ID
+          print('💡 ID formaté détecté, extraction de l\'ID pur: $cleanOrderId');
+        }
+      }
       
-      // Utiliser le service Dio pour assigner un livreur
-      final response = await _dioService.put(
-        '/api/commandes/$orderId/assign',
-        requestBody
-      );
+      final token = await _authService.getToken();
       
-      print('📝 Réponse du serveur: ${response.statusCode}');
+      if (token == null) {
+        print('❌ Token d\'authentification non trouvé');
+        return false;
+      }
       
-      if (response.statusCode! >= 200 && response.statusCode! < 300) {
-        return true;
-      } else {
-        print('❌ Erreur API: ${response.statusCode} ${response.data}');
-        throw Exception('Erreur lors de l\'assignation du livreur: ${response.statusCode}');
+      print('🚚 Tentative d\'assignation du livreur $livreurId à la commande $cleanOrderId');
+      
+      // Tenter la requête avec l'API commandes d'abord
+      final url1 = '$baseUrl/api/commandes/$cleanOrderId/livreur';
+      print('💡 Essai 1: Envoi requête PUT à $url1');
+      
+      try {
+        final response = await http.put(
+          Uri.parse(url1),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'livreurId': livreurId
+          }),
+        );
+        
+        print('💡 Statut de réponse (endpoint 1): ${response.statusCode}');
+        
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          print('✅ Livreur assigné avec succès via l\'API /commandes/');
+          return true;
+        }
+        
+        // Si l'endpoint commandes échoue, essayer l'endpoint orders
+        final url2 = '$baseUrl/api/orders/$cleanOrderId/assign';
+        print('💡 Essai 2: Envoi requête PUT à $url2');
+        
+        final response2 = await http.put(
+          Uri.parse(url2),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'deliveryPersonId': livreurId
+          }),
+        );
+        
+        print('💡 Statut de réponse (endpoint 2): ${response2.statusCode}');
+        
+        if (response2.statusCode >= 200 && response2.statusCode < 300) {
+          print('✅ Livreur assigné avec succès via l\'API /orders/');
+          return true;
+        } else {
+          print('❌ Les deux endpoints ont échoué. Dernier code: ${response2.statusCode}');
+          return false;
+        }
+      } catch (e) {
+        print('❌ Exception lors des requêtes API: $e');
+        return false;
       }
     } catch (e) {
-      print('📝 Erreur lors de l\'assignation du livreur: $e');
-      rethrow;
+      print('❌ Exception globale lors de l\'assignation du livreur: $e');
+      return false;
     }
   }
 } 

@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const DeliveryPerson = require('../models/DeliveryPerson');
 const { rateLimit } = require('express-rate-limit');
 const mongoose = require('mongoose');
+const User = require('../models/User');
 
 // Configuration du rate limiting
 const orderLimiter = rateLimit({
@@ -218,8 +219,13 @@ exports.assignDeliveryPerson = async (req, res) => {
       return res.status(400).json({ message: 'ID du livreur requis' });
     }
 
-    const deliveryPerson = await DeliveryPerson.findById(deliveryPersonId);
-    if (!deliveryPerson) {
+    // Rechercher l'utilisateur avec le rôle Livreur
+    const livreur = await User.findOne({ 
+      _id: deliveryPersonId,
+      role: 'Livreur'
+    });
+    
+    if (!livreur) {
       return res.status(404).json({ message: 'Livreur non trouvé' });
     }
 
@@ -228,18 +234,14 @@ exports.assignDeliveryPerson = async (req, res) => {
       return res.status(404).json({ message: 'Commande non trouvée' });
     }
 
-    order.deliveryPersonId = deliveryPerson._id;
+    // Mettre à jour la commande avec l'ID du livreur
+    order.livreurId = livreur._id;
     if (order.statut === 'En attente') {
       order.statut = 'Expédiée';
       order.dateLivraison = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // Livraison dans 2 jours
     }
 
     await order.save();
-
-    if (!deliveryPerson.assignedOrders.includes(order._id)) {
-      deliveryPerson.assignedOrders.push(order._id);
-      await deliveryPerson.save();
-    }
 
     res.json({
       message: 'Livreur assigné avec succès',
