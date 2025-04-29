@@ -42,6 +42,9 @@ router.get('/mes-commandes', orderController.getUserOrders);
 router.get('/mobile/mes-commandes', orderController.getMobileUserOrders);
 console.log('Route mobile enregistrée: /mobile/mes-commandes');
 
+// Route pour mettre à jour le statut d'une commande (pour l'admin)
+router.put('/:id/status', admin, orderController.updateOrderStatus);
+
 // Route pour annuler une commande
 router.put('/:id/annuler', orderController.updateOrderStatus);
 

@@ -13,7 +13,7 @@ class CommandesPage extends StatefulWidget {
 class _CommandesPageState extends State<CommandesPage> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   late TabController _tabController;
-  final List<String> _filterOptions = ['Toutes', 'En attente', 'En cours', 'Livrée', 'Annulée'];
+  final List<String> _filterOptions = ['Toutes', 'En attente', 'Expédiée', 'Livrée', 'Annulée'];
   String _selectedStatus = 'Toutes';
   String _searchQuery = '';
   
@@ -214,7 +214,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
       case 'En attente':
         statusColor = Colors.orange;
         break;
-      case 'En cours':
+      case 'Expédiée':
         statusColor = Colors.blue;
         break;
       case 'Livrée':
@@ -414,8 +414,13 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
   
   // Boîte de dialogue pour modifier le statut d'une commande
   void _showStatusUpdateDialog(Order order) {
-    final possibleStatuses = ['En attente', 'En cours', 'Livrée', 'Annulée'];
+    final possibleStatuses = ['En attente', 'Expédiée', 'Livrée', 'Annulée'];
     String selectedStatus = order.status;
+    
+    // Si le statut actuel est "En cours", le convertir en "Expédiée" pour la compatibilité
+    if (selectedStatus == 'En cours') {
+      selectedStatus = 'Expédiée';
+    }
     
     showDialog(
       context: context,
