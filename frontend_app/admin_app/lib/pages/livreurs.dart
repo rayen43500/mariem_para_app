@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/delivery_service.dart';
+import '../models/delivery_person_model.dart';
 
 class LivreursPage extends StatefulWidget {
   const LivreursPage({super.key});
@@ -10,80 +12,84 @@ class LivreursPage extends StatefulWidget {
 
 class _LivreursPageState extends State<LivreursPage> {
   final _authService = AuthService();
-  bool _isLoading = false;
+  final _deliveryService = DeliveryService();
+  bool _isLoading = true;
   String _searchQuery = '';
   String _selectedStatus = 'Tous';
   final List<String> _statusOptions = ['Tous', 'Disponible', 'En livraison', 'Inactif'];
 
-  final List<Map<String, dynamic>> _livreurs = [
-    {
-      'id': 'L001',
-      'nom': 'Pierre Dubois',
-      'telephone': '+33 6 12 34 56 78',
-      'email': 'pierre.dubois@example.com',
-      'status': 'Disponible',
-      'livraisons': 128,
-      'rating': 4.8,
-      'zone': 'Paris Centre',
-      'vehicule': 'Vélo électrique',
-      'photo': 'https://picsum.photos/200/300',
-    },
-    {
-      'id': 'L002',
-      'nom': 'Marie Lambert',
-      'telephone': '+33 6 23 45 67 89',
-      'email': 'marie.lambert@example.com',
-      'status': 'En livraison',
-      'livraisons': 95,
-      'rating': 4.6,
-      'zone': 'Paris Nord',
-      'vehicule': 'Scooter',
-      'photo': 'https://picsum.photos/200/300',
-    },
-    {
-      'id': 'L003',
-      'nom': 'Julien Moreau',
-      'telephone': '+33 6 34 56 78 90',
-      'email': 'julien.moreau@example.com',
-      'status': 'Disponible',
-      'livraisons': 210,
-      'rating': 4.9,
-      'zone': 'Paris Sud',
-      'vehicule': 'Voiture électrique',
-      'photo': 'https://picsum.photos/200/300',
-    },
-    {
-      'id': 'L004',
-      'nom': 'Sophie Martin',
-      'telephone': '+33 6 45 67 89 01',
-      'email': 'sophie.martin@example.com',
-      'status': 'Inactif',
-      'livraisons': 45,
-      'rating': 4.2,
-      'zone': 'Paris Ouest',
-      'vehicule': 'Vélo',
-      'photo': 'https://picsum.photos/200/300',
-    },
-    {
-      'id': 'L005',
-      'nom': 'Antoine Legrand',
-      'telephone': '+33 6 56 78 90 12',
-      'email': 'antoine.legrand@example.com',
-      'status': 'En livraison',
-      'livraisons': 173,
-      'rating': 4.7,
-      'zone': 'Paris Centre',
-      'vehicule': 'Moto',
-      'photo': 'https://picsum.photos/200/300',
-    },
-  ];
+  List<DeliveryPerson> _livreurs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLivreurs();
+  }
+  
+  // Récupérer tous les livreurs
+  Future<void> _fetchLivreurs() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Essayer d'abord la méthode getUsersWithRoleLivreur pour récupérer uniquement les utilisateurs livreurs
+      final livreursData = await _deliveryService.getUsersWithRoleLivreur();
+      
+      setState(() {
+        _livreurs = livreursData.map((json) => DeliveryPerson.fromJson(json)).toList();
+        _isLoading = false;
+      });
+      
+      if (_livreurs.isEmpty) {
+        // Si aucun livreur n'est trouvé avec la première méthode, afficher un message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucun livreur trouvé. Vous pouvez en ajouter un en cliquant sur le bouton +'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      // Si la première méthode échoue, essayer getAllDeliveryPersons
+      try {
+        final livreursData = await _deliveryService.getAllDeliveryPersons();
+        
+        setState(() {
+          _livreurs = livreursData.map((json) => DeliveryPerson.fromJson(json)).toList();
+          _isLoading = false;
+        });
+        
+        if (_livreurs.isEmpty) {
+          // Si aucun livreur n'est trouvé avec la deuxième méthode non plus, afficher un message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Aucun livreur trouvé. Vous pouvez en ajouter un en cliquant sur le bouton +'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e2) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement des livreurs: $e2'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredLivreurs = _livreurs.where((livreur) {
-      final matchesStatus = _selectedStatus == 'Tous' || livreur['status'] == _selectedStatus;
-      final matchesSearch = livreur['nom'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          livreur['email'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesStatus = _selectedStatus == 'Tous' || livreur.status == _selectedStatus;
+      final matchesSearch = livreur.nom.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          livreur.email.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     }).toList();
 
@@ -160,6 +166,8 @@ class _LivreursPageState extends State<LivreursPage> {
             ),
           ),
           Expanded(
+            child: RefreshIndicator(
+              onRefresh: _fetchLivreurs,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filteredLivreurs.isEmpty
@@ -190,13 +198,14 @@ class _LivreursPageState extends State<LivreursPage> {
                           final livreur = filteredLivreurs[index];
                           return _buildLivreurCard(livreur, theme, isSmallScreen);
                         },
+                        ),
                       ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Logique pour ajouter un nouveau livreur
+          _showAddLivreurDialog();
         },
         backgroundColor: theme.colorScheme.primary,
         child: const Icon(Icons.add),
@@ -204,9 +213,146 @@ class _LivreursPageState extends State<LivreursPage> {
     );
   }
 
-  Widget _buildLivreurCard(Map<String, dynamic> livreur, ThemeData theme, bool isSmallScreen) {
+  // Dialogue pour ajouter un nouveau livreur
+  void _showAddLivreurDialog() {
+    final formKey = GlobalKey<FormState>();
+    String nom = '';
+    String email = '';
+    String telephone = '';
+    String password = 'Livreur123@'; // Mot de passe par défaut
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Ajouter un nouveau livreur'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Nom complet',
+                      icon: Icon(Icons.person),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un nom';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      nom = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      icon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un email';
+                      }
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(value)) {
+                        return 'Veuillez entrer un email valide';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      email = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Téléphone',
+                      icon: Icon(Icons.phone),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un numéro de téléphone';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      telephone = value!;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  
+                  try {
+                    Navigator.of(context).pop();
+                    
+                    // Afficher un indicateur de chargement
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    
+                    final livreurData = {
+                      'nom': nom,
+                      'email': email,
+                      'telephone': telephone,
+                      'password': password,
+                      'role': 'livreur',
+                    };
+                    
+                    await _deliveryService.createDeliveryPerson(livreurData);
+                    
+                    // Recharger la liste des livreurs
+                    await _fetchLivreurs();
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Livreur ajouté avec succès'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors de l\'ajout du livreur: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Ajouter'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLivreurCard(DeliveryPerson livreur, ThemeData theme, bool isSmallScreen) {
     Color statusColor;
-    switch (livreur['status']) {
+    switch (livreur.status) {
       case 'Disponible':
         statusColor = Colors.green;
         break;
@@ -235,7 +381,7 @@ class _LivreursPageState extends State<LivreursPage> {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundImage: NetworkImage(livreur['photo']),
+                  backgroundImage: NetworkImage(livreur.photo),
                   onBackgroundImageError: (_, __) {},
                   child: Container(),
                 ),
@@ -249,7 +395,7 @@ class _LivreursPageState extends State<LivreursPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              livreur['nom'],
+                              livreur.nom,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -265,7 +411,7 @@ class _LivreursPageState extends State<LivreursPage> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              livreur['status'],
+                              livreur.status,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: statusColor,
@@ -285,7 +431,7 @@ class _LivreursPageState extends State<LivreursPage> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            livreur['zone'],
+                            livreur.zone.isNotEmpty ? livreur.zone : 'Non définie',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,
@@ -299,7 +445,7 @@ class _LivreursPageState extends State<LivreursPage> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            livreur['vehicule'],
+                            livreur.vehicule.isNotEmpty ? livreur.vehicule : 'Non défini',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,
@@ -319,12 +465,12 @@ class _LivreursPageState extends State<LivreursPage> {
                 _buildInfoItem(
                   Icons.delivery_dining,
                   'Livraisons',
-                  livreur['livraisons'].toString(),
+                  livreur.livraisons.toString(),
                 ),
                 _buildInfoItem(
                   Icons.star,
                   'Évaluation',
-                  '${livreur['rating']} / 5',
+                  '${livreur.rating} / 5',
                 ),
                 const Spacer(),
                 Row(
@@ -332,7 +478,14 @@ class _LivreursPageState extends State<LivreursPage> {
                     IconButton(
                       icon: const Icon(Icons.phone),
                       onPressed: () {
-                        // Logique pour appeler le livreur
+                        // Ouvrir l'application téléphone avec le numéro précomposé
+                        // On simule juste une action pour le moment
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Appel à ${livreur.nom} (${livreur.telephone})'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -342,11 +495,56 @@ class _LivreursPageState extends State<LivreursPage> {
                     IconButton(
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () {
-                        // Logique pour modifier le livreur
+                        _showEditLivreurDialog(livreur);
                       },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       color: Colors.blue,
+                    ),
+                    const SizedBox(width: 12),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Colors.grey.shade700,
+                      ),
+                      padding: EdgeInsets.zero,
+                      onSelected: (value) async {
+                        if (value == 'toggle_status') {
+                          await _toggleLivreurStatus(livreur);
+                        } else if (value == 'delete') {
+                          await _deleteLivreur(livreur);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'toggle_status',
+                          child: Row(
+                            children: [
+                              Icon(
+                                livreur.isActive ? Icons.person_off : Icons.person,
+                                color: livreur.isActive ? Colors.red : Colors.green,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(livreur.isActive ? 'Désactiver' : 'Activer'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text('Supprimer'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -388,5 +586,258 @@ class _LivreursPageState extends State<LivreursPage> {
         ),
       ],
     );
+  }
+
+  // Dialogue pour modifier un livreur
+  void _showEditLivreurDialog(DeliveryPerson livreur) {
+    final formKey = GlobalKey<FormState>();
+    String nom = livreur.nom;
+    String email = livreur.email;
+    String telephone = livreur.telephone;
+    String zone = livreur.zone;
+    String vehicule = livreur.vehicule;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Modifier ${livreur.nom}'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    initialValue: nom,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom complet',
+                      icon: Icon(Icons.person),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un nom';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      nom = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: email,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      icon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un email';
+                      }
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(value)) {
+                        return 'Veuillez entrer un email valide';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      email = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: telephone,
+                    decoration: const InputDecoration(
+                      labelText: 'Téléphone',
+                      icon: Icon(Icons.phone),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer un numéro de téléphone';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) {
+                      telephone = value!;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: zone,
+                    decoration: const InputDecoration(
+                      labelText: 'Zone',
+                      icon: Icon(Icons.location_on),
+                    ),
+                    onSaved: (value) {
+                      zone = value ?? '';
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: vehicule,
+                    decoration: const InputDecoration(
+                      labelText: 'Véhicule',
+                      icon: Icon(Icons.directions_bike),
+                    ),
+                    onSaved: (value) {
+                      vehicule = value ?? '';
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  
+                  try {
+                    Navigator.of(context).pop();
+                    
+                    // Afficher un indicateur de chargement
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    
+                    final livreurData = {
+                      'nom': nom,
+                      'email': email,
+                      'telephone': telephone,
+                      'zone': zone,
+                      'vehicule': vehicule,
+                    };
+                    
+                    await _deliveryService.updateDeliveryPerson(livreur.id, livreurData);
+                    
+                    // Recharger la liste des livreurs
+                    await _fetchLivreurs();
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Livreur mis à jour avec succès'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors de la mise à jour du livreur: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Mettre à jour'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  // Activer/désactiver un livreur
+  Future<void> _toggleLivreurStatus(DeliveryPerson livreur) async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final newStatus = !livreur.isActive;
+      
+      await _deliveryService.updateDeliveryPerson(
+        livreur.id,
+        {'isActive': newStatus},
+      );
+      
+      // Recharger la liste des livreurs
+      await _fetchLivreurs();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Livreur ${newStatus ? 'activé' : 'désactivé'} avec succès'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du changement de statut: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  // Supprimer un livreur
+  Future<void> _deleteLivreur(DeliveryPerson livreur) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Êtes-vous sûr de vouloir supprimer le livreur ${livreur.nom} ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      try {
+        setState(() {
+          _isLoading = true;
+        });
+        
+        await _deliveryService.deleteDeliveryPerson(livreur.id);
+        
+        // Recharger la liste des livreurs
+        await _fetchLivreurs();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Livreur supprimé avec succès'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la suppression du livreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
