@@ -376,7 +376,8 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                if (order.status != 'Livrée' && order.status != 'Annulée')
+                // Bouton Modifier le statut - maintenant visible pour tous les statuts sauf "Annulée"
+                if (order.status != 'Annulée')
                   ElevatedButton.icon(
                     onPressed: () => _showStatusUpdateDialog(order),
                     icon: const Icon(Icons.edit),
@@ -386,13 +387,25 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                       foregroundColor: Colors.white,
                     ),
                   ),
+                // Bouton rapide pour marquer comme livrée
+                if (order.status != 'Livrée' && order.status != 'Annulée')
+                  ElevatedButton.icon(
+                    onPressed: () => _showDeliveredConfirmationDialog(order),
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Marquer livrée'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                // Bouton Assigner livreur
                 if (order.status != 'Annulée')
                   ElevatedButton.icon(
                     onPressed: () => _showDeliveryPersonDialog(order),
                     icon: const Icon(Icons.delivery_dining),
                     label: const Text('Assigner livreur'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -616,6 +629,88 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
         }
       ),
     );
+  }
+  
+  // Boîte de dialogue pour marquer une commande comme livrée rapidement
+  void _showDeliveredConfirmationDialog(Order order) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la livraison'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Êtes-vous sûr de vouloir marquer la commande ${order.id} comme livrée?'),
+            const SizedBox(height: 16),
+            // Informations sur le statut actuel
+            Row(
+              children: [
+                Text('Statut actuel: ', 
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(order.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _getStatusColor(order.status)),
+                  ),
+                  child: Text(
+                    order.status,
+                    style: TextStyle(
+                      color: _getStatusColor(order.status),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Informations sur le livreur
+            if (order.livreurId != null && order.livreurName != null && order.livreurName!.isNotEmpty)
+              Text('Livreur: ${order.livreurName}', 
+                  style: TextStyle(fontStyle: FontStyle.italic))
+            else
+              const Text('Aucun livreur assigné', 
+                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _updateOrderStatus(order.id, 'Livrée');
+            },
+            icon: const Icon(Icons.check_circle),
+            label: const Text('Confirmer la livraison'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Obtenir la couleur en fonction du statut
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'En attente':
+        return Colors.orange;
+      case 'Expédiée':
+        return Colors.blue;
+      case 'Livrée':
+        return Colors.green;
+      case 'Annulée':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
   
   // Fonction utilitaire pour limiter la longueur d'une chaîne
