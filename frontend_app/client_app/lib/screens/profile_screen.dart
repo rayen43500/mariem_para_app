@@ -103,6 +103,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _userData?['email'] ?? '',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userData?['telephone'] ?? 'Aucun numéro',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
                       ],
                     ),
                   ),

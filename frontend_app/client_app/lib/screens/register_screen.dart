@@ -16,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _telephoneController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -26,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _telephoneController.dispose();
     super.dispose();
   }
 
@@ -40,6 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _emailController.text,
           _passwordController.text,
           _nameController.text,
+          _telephoneController.text,
         );
         
         if (mounted) {
@@ -178,6 +181,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   }
                                   if (!value.contains('@')) {
                                     return 'Veuillez entrer un email valide';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _telephoneController,
+                                decoration: AppTheme.textFieldDecoration(
+                                  'Téléphone',
+                                  Icons.phone_outlined,
+                                ),
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Veuillez entrer votre téléphone';
                                   }
                                   return null;
                                 },

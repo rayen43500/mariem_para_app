@@ -5,7 +5,10 @@ const userController = require('../controllers/userController');
 
 // Routes protégées
 router.get('/me', auth, userController.getProfile);
-router.patch('/me', auth, userController.updateProfile);
+
+// Route pour le comptage des utilisateurs (pour le dashboard)
+router.get('/count', auth, isAdmin, userController.getUserCount);
+
 router.get('/', auth, isAdmin, userController.getUsers);
 router.patch('/:id/disable', auth, isAdmin, userController.disableUser);
 router.patch('/:id/enable', auth, isAdmin, userController.enableUser);

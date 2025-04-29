@@ -13,6 +13,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const commandesRoutes = require('./routes/commandesRoutes');
 const panierRoutes = require('./routes/panierRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/orders', protect, orderRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/commandes', protect, commandesRoutes);
 app.use('/api/panier', protect, panierRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling
 app.use(errorHandler);

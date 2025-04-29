@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/stats_service.dart';
 import 'dart:math';
 
 class StatistiquePage extends StatefulWidget {
@@ -11,51 +12,63 @@ class StatistiquePage extends StatefulWidget {
 
 class _StatistiquePageState extends State<StatistiquePage> {
   final _authService = AuthService();
-  bool _isLoading = false;
+  final _statsService = StatsService();
+  bool _isLoading = true;
   String _selectedPeriod = 'Semaine';
   final List<String> _periodOptions = ['Jour', 'Semaine', 'Mois', 'Année'];
 
-  // Données fictives pour les statistiques
-  final Map<String, dynamic> _statsData = {
-    'revenuTotal': 12586.45,
-    'revenuComparaison': 8.7,
-    'commandesTotal': 156,
-    'commandesComparaison': 12.4,
-    'clientsTotal': 42,
-    'clientsComparaison': -3.2,
-    'vuesProduits': 1245,
-    'vuesComparaison': 15.8,
-    'tauxConversion': 3.2,
-    'tauxConversionComparaison': 0.8,
-    'produitsBestSellers': [
-      {'nom': 'Smartphone XYZ Pro', 'ventes': 28, 'revenu': 16799.72},
-      {'nom': 'Écouteurs sans fil', 'ventes': 45, 'revenu': 5849.55},
-      {'nom': 'Laptop Pro 15"', 'ventes': 12, 'revenu': 15599.88},
-      {'nom': 'Montre connectée', 'ventes': 24, 'revenu': 5988.00},
-      {'nom': 'Enceinte Bluetooth', 'ventes': 32, 'revenu': 2559.68},
-    ],
-    'ventesMensuelles': [
-      {'mois': 'Jan', 'ventes': 8240.50},
-      {'mois': 'Fév', 'ventes': 7890.30},
-      {'mois': 'Mar', 'ventes': 9120.75},
-      {'mois': 'Avr', 'ventes': 8450.20},
-      {'mois': 'Mai', 'ventes': 10250.60},
-      {'mois': 'Juin', 'ventes': 11340.80},
-      {'mois': 'Juil', 'ventes': 12580.45},
-      {'mois': 'Août', 'ventes': 9870.30},
-      {'mois': 'Sep', 'ventes': 10740.55},
-      {'mois': 'Oct', 'ventes': 11890.70},
-      {'mois': 'Nov', 'ventes': 13450.90},
-      {'mois': 'Déc', 'ventes': 15780.25},
-    ],
-    'ventesParCategorie': [
-      {'categorie': 'Électronique', 'pourcentage': 45},
-      {'categorie': 'Accessoires', 'pourcentage': 25},
-      {'categorie': 'Informatique', 'pourcentage': 15},
-      {'categorie': 'Wearables', 'pourcentage': 10},
-      {'categorie': 'Audio', 'pourcentage': 5},
-    ],
-  };
+  // Données pour les statistiques
+  Map<String, dynamic> _statsData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final stats = await _statsService.getStats();
+      
+      setState(() {
+        _statsData = stats;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        // Initialiser avec des valeurs par défaut en cas d'erreur
+        _statsData = {
+          'revenuTotal': 0,
+          'revenuComparaison': 0,
+          'commandesTotal': 0,
+          'commandesComparaison': 0,
+          'clientsTotal': 0,
+          'clientsComparaison': 0,
+          'vuesProduits': 0,
+          'vuesComparaison': 0,
+          'tauxConversion': 0,
+          'tauxConversionComparaison': 0,
+          'produitsBestSellers': [],
+          'ventesMensuelles': [],
+          'ventesParCategorie': [],
+        };
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement des statistiques: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,13 +113,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () async {
-                // Logique de rafraîchissement des données
-                await Future.delayed(const Duration(seconds: 1));
-                setState(() {
-                  // Mise à jour des données
-                });
-              },
+              onRefresh: _loadStats,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -664,7 +671,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
   double _calculateYearlyTotal() {
     return _statsData['ventesMensuelles']
         .map<double>((item) => item['ventes'] as double)
-        .fold<double>(0.0, (previous, current) => previous + current);
+        .fold<double>(0.0, (double previous, double current) => previous + current);
   }
 
   Color _getCategoryColor(String category, ThemeData theme) {

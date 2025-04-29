@@ -178,9 +178,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       } else if (item.title == 'Commandes') {
         item.count = _dashboardStats['commandes'].toString();
       } else if (item.title == 'Utilisateurs') {
-        item.count = _dashboardStats['utilisateurs'].toString();
+        if (_dashboardStats.containsKey('utilisateurs') && _dashboardStats['utilisateurs'] != null) {
+          item.count = _dashboardStats['utilisateurs'].toString();
+        }
       } else if (item.title == 'Promotions') {
         item.count = _dashboardStats['promotions'].toString();
+      } else if (item.title == 'Livreurs') {
+        item.count = '3';
       }
     }
   }

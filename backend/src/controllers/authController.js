@@ -25,7 +25,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { nom, email, motDePasse } = req.body;
+    const { nom, email, motDePasse, telephone } = req.body;
 
     // Vérifier si l'utilisateur existe déjà
     let user = await User.findOne({ email });
@@ -38,6 +38,7 @@ exports.register = async (req, res) => {
       nom,
       email,
       motDePasse,
+      telephone,
       role: req.body.role ? req.body.role.charAt(0).toUpperCase() + req.body.role.slice(1).toLowerCase() : 'Client'
     });
 
@@ -59,6 +60,7 @@ exports.register = async (req, res) => {
         id: user._id,
         nom: user.nom,
         email: user.email,
+        telephone: user.telephone,
         role: user.role,
         isVerified: user.isVerified
       }
@@ -115,6 +117,7 @@ exports.login = async (req, res) => {
         id: user._id,
         nom: user.nom,
         email: user.email,
+        telephone: user.telephone,
         role: user.role,
         isVerified: user.isVerified
       };

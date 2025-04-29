@@ -111,9 +111,9 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> register(String email, String password, String name) async {
+  Future<void> register(String email, String password, String name, String telephone) async {
     try {
-      await _authService.register(email, password, name);
+      await _authService.register(email, password, name, telephone);
       // Ne pas connecter automatiquement l'utilisateur après l'inscription
       // L'utilisateur devra se connecter manuellement
     } catch (e) {
