@@ -348,7 +348,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
   Widget _buildSalesChart(ThemeData theme) {
     final maxSale = _statsData['ventesMensuelles']
         .map<double>((item) => item['ventes'] as double)
-        .reduce((double a, double b) => max<double>(a, b));
+        .reduce((double a, double b) => max(a, b));
 
     return Card(
       elevation: 4,
@@ -429,7 +429,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
   Widget _buildCategoryChart(ThemeData theme) {
     final totalPercentage = _statsData['ventesParCategorie']
         .map<int>((item) => item['pourcentage'] as int)
-        .reduce((a, b) => a + b);
+        .reduce((int a, int b) => a + b);
 
     return Card(
       elevation: 4,

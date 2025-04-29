@@ -223,21 +223,21 @@ class OrderService {
       print('💡 Essai 1: Envoi requête PUT à $url1');
       
       try {
-        final response = await http.put(
+      final response = await http.put(
           Uri.parse(url1),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
           body: json.encode({'statut': backendStatus}),
-        );
-        
+      );
+      
         print('💡 Statut de réponse (endpoint 1): ${response.statusCode}');
-        
+      
         // Si l'endpoint a réussi, retourner succès
-        if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
           print('✅ Statut mis à jour avec succès (endpoint /api/commandes)');
-          return true;
+        return true;
         }
         
         // Si 404, essayer avec le deuxième endpoint
@@ -292,7 +292,7 @@ class OrderService {
           if (response2.statusCode >= 200 && response2.statusCode < 300) {
             print('✅ Statut mis à jour avec succès (endpoint /api/orders)');
             return true;
-          } else {
+        } else {
             print('❌ Échec endpoint 2: ${response2.statusCode}');
             // Pour démonstration: permettre de simuler une mise à jour même si l'API échoue
             return true;

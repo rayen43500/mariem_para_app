@@ -14,6 +14,7 @@ const promotionRoutes = require('./routes/promotionRoutes');
 const commandesRoutes = require('./routes/commandesRoutes');
 const panierRoutes = require('./routes/panierRoutes');
 const userRoutes = require('./routes/userRoutes');
+const statisticsRoutes = require('./routes/statisticsRoutes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/commandes', protect, commandesRoutes);
 app.use('/api/panier', protect, panierRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/statistics', protect, statisticsRoutes);
 
 // Error handling
 app.use(errorHandler);

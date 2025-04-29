@@ -57,66 +57,66 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     _cardItems = [
       CardItem(
         title: 'Produits',
-        icon: Icons.shopping_bag_outlined,
-        color: const Color(0xFF4A6FFF),
-        secondaryColor: const Color(0xFF84A9FF),
+        icon: Icons.medication_outlined,
+        color: const Color(0xFF00A86B),
+        secondaryColor: const Color(0xFF7FDCAD),
         route: '/products',
         count: '...',
-        description: 'Gérez votre catalogue',
+        description: 'Gérez votre inventaire',
       ),
       CardItem(
         title: 'Commandes',
-        icon: Icons.shopping_cart_outlined,
-        color: const Color(0xFF36B37E),
-        secondaryColor: const Color(0xFF79F2C0),
+        icon: Icons.receipt_long_outlined,
+        color: const Color(0xFF4073FF),
+        secondaryColor: const Color(0xFF85AEFF),
         route: '/orders',
         count: '...',
-        description: 'Suivi des commandes',
+        description: 'Suivi des prescriptions',
       ),
       CardItem(
-        title: 'Utilisateurs',
+        title: 'Client',
         icon: Icons.people_outline,
-        color: const Color(0xFFFF5630),
-        secondaryColor: const Color(0xFFFFAB99),
+        color: const Color(0xFF9C27B0),
+        secondaryColor: const Color(0xFFE1BEE7),
         route: '/users',
         count: '...',
-        description: 'Gestion des comptes',
+        description: 'Gestion des clients',
       ),
       CardItem(
-        title: 'Statistiques',
-        icon: Icons.insert_chart_outlined,
+        title: 'Analyses',
+        icon: Icons.analytics_outlined,
         color: const Color(0xFF6554C0),
         secondaryColor: const Color(0xFFB8ACF6),
         route: '/stats',
         count: '',
-        description: 'Analyses des ventes',
+        description: 'Statistiques de vente',
       ),
       CardItem(
-        title: 'Livreurs',
-        icon: Icons.delivery_dining_outlined,
+        title: 'Livraisons',
+        icon: Icons.local_shipping_outlined,
         color: const Color(0xFF00B8D9),
         secondaryColor: const Color(0xFF8FDFF6),
         route: '/delivery',
         count: '...',
-        description: 'Gestion des livreurs',
+        description: 'Gestion des livraisons',
       ),
       CardItem(
         title: 'Promotions',
-        icon: Icons.local_offer_outlined,
+        icon: Icons.discount_outlined,
         color: const Color(0xFFFF8B00),
         secondaryColor: const Color(0xFFFFD580),
         route: '/promotions',
         count: '...',
-        description: 'Codes promos & offres',
+        description: 'Remises & offres spéciales',
       ),
       CardItem(
         title: 'Catégories',
-        icon: Icons.category_outlined,
-        color: const Color(0xFF7A0BC0),
-        secondaryColor: const Color(0xFFC87DFF),
+        icon: Icons.medical_services_outlined,
+        color: const Color(0xFFE53935),
+        secondaryColor: const Color(0xFFFF8A80),
         route: '/categories',
         count: '...',
-        description: 'Gestion des catégories',
+        description: 'Types de produit',
       ),
     ];
   }
@@ -171,19 +171,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     for (int i = 0; i < _cardItems.length; i++) {
       final item = _cardItems[i];
       
-      if (item.title == 'Produits') {
+      if (item.title == 'Médicaments') {
         item.count = _dashboardStats['produits'].toString();
       } else if (item.title == 'Catégories') {
         item.count = _dashboardStats['categories'].toString();
-      } else if (item.title == 'Commandes') {
+      } else if (item.title == 'Ordonnances') {
         item.count = _dashboardStats['commandes'].toString();
-      } else if (item.title == 'Utilisateurs') {
+      } else if (item.title == 'Patients') {
         if (_dashboardStats.containsKey('utilisateurs') && _dashboardStats['utilisateurs'] != null) {
           item.count = _dashboardStats['utilisateurs'].toString();
         }
       } else if (item.title == 'Promotions') {
         item.count = _dashboardStats['promotions'].toString();
-      } else if (item.title == 'Livreurs') {
+      } else if (item.title == 'Livraisons') {
         item.count = '3';
       }
     }
@@ -349,7 +349,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
   Widget _buildHeader(ThemeData theme, bool isSmallScreen) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      color: theme.colorScheme.primary,
+      color: const Color(0xFF00A86B),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -360,13 +360,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
             child: Row(
               children: [
                 Icon(
-                  Icons.dashboard_rounded,
+                  Icons.local_pharmacy,
                   color: Colors.white,
                   size: isSmallScreen ? 24 : 28,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Dashboard Admin',
+                  'PharmaDashboard',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -383,7 +383,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
                 backgroundColor: Colors.white.withOpacity(0.2),
                 child: _user != null
                     ? Text(
-                        _getInitials(_user!['nom'] ?? 'Admin'),
+                        _getInitials(_user!['nom'] ?? 'Pharma'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -465,34 +465,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
             scrollDirection: Axis.horizontal,
             children: [
               _buildSummaryCard(
-                icon: Icons.payment_outlined,
+                icon: Icons.euro_symbol_outlined,
                 title: 'Ventes du jour',
                 value: '€ 1,256.50',
                 change: '+12.5%',
                 isPositive: true,
-                color: theme.colorScheme.primary,
+                color: const Color(0xFF00A86B),
                 animationValue: _animation.value,
                 delay: 0,
                 isSmallScreen: isSmallScreen,
               ),
               _buildSummaryCard(
-                icon: Icons.shopping_bag_outlined,
-                title: 'Commandes',
+                icon: Icons.receipt_long_outlined,
+                title: 'Ordonnances',
                 value: '26',
                 change: '+8.2%',
                 isPositive: true,
-                color: const Color(0xFF36B37E),
+                color: const Color(0xFF4073FF),
                 animationValue: _animation.value,
                 delay: 0.1,
                 isSmallScreen: isSmallScreen,
               ),
               _buildSummaryCard(
-                icon: Icons.people_outline,
-                title: 'Nouveaux clients',
+                icon: Icons.person_add_outlined,
+                title: 'Nouveaux patients',
                 value: '12',
                 change: '-2.4%',
                 isPositive: false,
-                color: const Color(0xFFFF5630),
+                color: const Color(0xFF9C27B0),
                 animationValue: _animation.value,
                 delay: 0.2,
                 isSmallScreen: isSmallScreen,
