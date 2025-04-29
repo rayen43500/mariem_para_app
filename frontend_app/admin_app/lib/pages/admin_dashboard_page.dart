@@ -171,13 +171,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
     for (int i = 0; i < _cardItems.length; i++) {
       final item = _cardItems[i];
       
-      if (item.title == 'Médicaments') {
+      if (item.title == 'Produits') {
         item.count = _dashboardStats['produits'].toString();
       } else if (item.title == 'Catégories') {
         item.count = _dashboardStats['categories'].toString();
-      } else if (item.title == 'Ordonnances') {
+      } else if (item.title == 'Commandes') {
         item.count = _dashboardStats['commandes'].toString();
-      } else if (item.title == 'Patients') {
+      } else if (item.title == 'Utilisateurs') {
         if (_dashboardStats.containsKey('utilisateurs') && _dashboardStats['utilisateurs'] != null) {
           item.count = _dashboardStats['utilisateurs'].toString();
         }
@@ -186,6 +186,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> with SingleTick
       } else if (item.title == 'Livraisons') {
         item.count = '3';
       }
+      
+      // Assurez-vous que le compteur n'est pas vide ou "0" pour l'affichage
+      if (item.count == "" || item.count == "0") {
+        item.count = "0";
+      }
+      
+      print('Mise à jour carte ${item.title}: ${item.count}');
     }
   }
 

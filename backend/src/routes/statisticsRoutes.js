@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const statisticsController = require('../controllers/statisticsController');
-const auth = require('../middleware/auth');
 
 // Middleware pour vérifier que l'utilisateur a un rôle autorisé
 const checkRole = (roles) => {
@@ -17,14 +16,14 @@ const checkRole = (roles) => {
 
 // Route pour obtenir les statistiques générales
 // GET /api/statistics/general
-router.get('/general', auth, statisticsController.getGeneralStats);
+router.get('/general', statisticsController.getGeneralStats);
 
 // Route pour obtenir les produits les plus vendus
 // GET /api/statistics/best-sellers
-router.get('/best-sellers', auth, statisticsController.getBestSellingProducts);
+router.get('/best-sellers', statisticsController.getBestSellingProducts);
 
 // Route pour obtenir les ventes par catégorie
 // GET /api/statistics/sales-by-category
-router.get('/sales-by-category', auth, statisticsController.getSalesByCategory);
+router.get('/sales-by-category', statisticsController.getSalesByCategory);
 
 module.exports = router; 

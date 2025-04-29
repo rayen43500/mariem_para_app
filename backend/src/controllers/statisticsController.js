@@ -7,46 +7,51 @@ const mongoose = require('mongoose');
 // Obtenir les statistiques générales pour le dashboard
 exports.getGeneralStats = async (req, res) => {
   try {
-    // Données fictives pour la démonstration
+    // Récupérer toutes les commandes
+    const allOrders = await Order.find();
+    
+    // Calcul des statistiques de base
+    const revenuTotal = allOrders
+      .filter(order => order.statut === 'Livrée')
+      .reduce((sum, order) => sum + order.total, 0);
+    
+    const commandesTotal = allOrders.length;
+    
+    // Compter les commandes livrées
+    const commandesLivrees = allOrders.filter(order => order.statut === 'Livrée').length;
+    
+    // Compter les clients uniques
+    const clientsUniques = [...new Set(allOrders.map(order => order.userId.toString()))].length;
+    
+    // Compter les commandes par statut
+    const commandesParStatut = {
+      'En attente': allOrders.filter(order => order.statut === 'En attente').length,
+      'Expédiée': allOrders.filter(order => order.statut === 'Expédiée').length,
+      'Livrée': commandesLivrees,
+      'Annulée': allOrders.filter(order => order.statut === 'Annulée').length,
+    };
+    
+    // Calculer le taux de conversion (simulé)
+    const tauxConversion = commandesTotal > 0 ? (commandesLivrees / commandesTotal * 100).toFixed(1) : 0;
+    
+    // Pour les données de tendance, nous utilisons des valeurs fictives pour l'instant
+    // car nous n'avons pas de données historiques
     const statsData = {
-      revenuTotal: 35642.50,
-      revenuComparaison: 8.7,
-      commandesTotal: 387,
-      commandesComparaison: 12.4,
-      clientsTotal: 254,
-      clientsComparaison: 5.2,
-      vuesProduits: 1245,
-      vuesComparaison: 15.8,
-      tauxConversion: 3.2,
-      tauxConversionComparaison: 0.8,
-      produitsBestSellers: [
-        { nom: 'Doliprane 1000mg', ventes: 128, revenu: 768.72 },
-        { nom: 'Advil 200mg', ventes: 95, revenu: 684.55 },
-        { nom: 'Smecta', ventes: 82, revenu: 455.88 },
-        { nom: 'Vitamines C', ventes: 74, revenu: 698.00 },
-        { nom: 'Sérum Physiologique', ventes: 62, revenu: 355.68 }
-      ],
-      ventesMensuelles: [
-        { mois: 'Jan', ventes: 8240.50 },
-        { mois: 'Fév', ventes: 7890.30 },
-        { mois: 'Mar', ventes: 9120.75 },
-        { mois: 'Avr', ventes: 8450.20 },
-        { mois: 'Mai', ventes: 10250.60 },
-        { mois: 'Juin', ventes: 11340.80 },
-        { mois: 'Juil', ventes: 12580.45 },
-        { mois: 'Août', ventes: 9870.30 },
-        { mois: 'Sep', ventes: 10740.55 },
-        { mois: 'Oct', ventes: 11890.70 },
-        { mois: 'Nov', ventes: 13450.90 },
-        { mois: 'Déc', ventes: 15780.25 }
-      ],
-      ventesParCategorie: [
-        { categorie: 'Médicaments', pourcentage: 45 },
-        { categorie: 'Parapharmacie', pourcentage: 25 },
-        { categorie: 'Orthopédie', pourcentage: 15 },
-        { categorie: 'Cosmétiques', pourcentage: 10 },
-        { categorie: 'Nutrition', pourcentage: 5 }
-      ]
+      revenuTotal: revenuTotal,
+      revenuComparaison: 0, // Pas de comparaison pour l'instant
+      commandesTotal: commandesTotal,
+      commandesComparaison: 0, // Pas de comparaison pour l'instant
+      clientsTotal: clientsUniques,
+      clientsComparaison: 0,
+      vuesProduits: 0, // Données fictives
+      vuesComparaison: 0,
+      tauxConversion: parseFloat(tauxConversion),
+      tauxConversionComparaison: 0,
+      commandesParStatut: commandesParStatut,
+      // Utiliser les données fictives pour les sections non encore implémentées
+      produitsBestSellers: await getBestSellingProducts(),
+      ventesMensuelles: await getMonthlySales(),
+      ventesParCategorie: await getSalesByCategoryInternal()
     };
     
     res.json(statsData);
@@ -63,14 +68,7 @@ exports.getGeneralStats = async (req, res) => {
 // Obtenir les produits les plus vendus
 exports.getBestSellingProducts = async (req, res) => {
   try {
-    const bestSellers = [
-      { nom: 'Doliprane 1000mg', ventes: 128, revenu: 768.72 },
-      { nom: 'Advil 200mg', ventes: 95, revenu: 684.55 },
-      { nom: 'Smecta', ventes: 82, revenu: 455.88 },
-      { nom: 'Vitamines C', ventes: 74, revenu: 698.00 },
-      { nom: 'Sérum Physiologique', ventes: 62, revenu: 355.68 }
-    ];
-    
+    const bestSellers = await getBestSellingProducts();
     res.json(bestSellers);
   } catch (error) {
     console.error('Erreur dans getBestSellingProducts:', error);
@@ -85,12 +83,35 @@ exports.getBestSellingProducts = async (req, res) => {
 // Obtenir les ventes par catégorie
 exports.getSalesByCategory = async (req, res) => {
   try {
+    // Récupérer toutes les commandes
+    const orders = await Order.find().populate('produits.produitId', 'categorie');
+    
+    // Si aucune commande n'est trouvée
+    if (!orders || orders.length === 0) {
+      return res.status(200).json([]);
+    }
+    
+    // Initialiser les compteurs
+    let totalCommandes = orders.length;
+    let totalCommandesLivrees = 0;
+    let revenuTotal = 0;
+    
+    // Calculer les statistiques
+    orders.forEach(order => {
+      // Compter toutes les commandes indépendamment du statut
+      
+      // Ajouter au total des commandes livrées
+      if (order.statut === 'Livrée') {
+        totalCommandesLivrees++;
+        revenuTotal += order.total; // Ajouter le montant des commandes livrées
+      }
+    });
+    
+    // Créer l'objet de réponse
     const categoryStats = [
-      { categorie: 'Médicaments', pourcentage: 45 },
-      { categorie: 'Parapharmacie', pourcentage: 25 },
-      { categorie: 'Orthopédie', pourcentage: 15 },
-      { categorie: 'Cosmétiques', pourcentage: 10 },
-      { categorie: 'Nutrition', pourcentage: 5 }
+      { categorie: 'Total des commandes', valeur: totalCommandes },
+      { categorie: 'Commandes livrées', valeur: totalCommandesLivrees },
+      { categorie: 'Revenu total (€)', valeur: revenuTotal.toFixed(2) }
     ];
     
     res.json(categoryStats);
@@ -98,7 +119,7 @@ exports.getSalesByCategory = async (req, res) => {
     console.error('Erreur dans getSalesByCategory:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération des ventes par catégorie',
+      message: 'Erreur lors de la récupération des statistiques',
       error: error.message
     });
   }
@@ -188,13 +209,13 @@ function calculatePercentageChange(oldValue, newValue) {
 async function getBestSellingProducts() {
   try {
     const result = await Order.aggregate([
-      { $match: { status: { $in: ['completed', 'delivered'] } } },
-      { $unwind: '$products' },
+      { $match: { statut: { $in: ['Livrée', 'Expédiée'] } } },
+      { $unwind: '$produits' },
       {
         $group: {
-          _id: '$products.product',
-          totalSold: { $sum: '$products.quantity' },
-          totalRevenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } }
+          _id: '$produits.produitId',
+          totalSold: { $sum: '$produits.quantité' },
+          totalRevenue: { $sum: { $multiply: ['$produits.prixUnitaire', '$produits.quantité'] } }
         }
       },
       { $sort: { totalSold: -1 } },
@@ -207,11 +228,11 @@ async function getBestSellingProducts() {
           as: 'productDetails'
         }
       },
-      { $unwind: '$productDetails' },
+      { $unwind: { path: '$productDetails', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 0,
-          nom: '$productDetails.name',
+          nom: { $ifNull: ['$productDetails.nom', 'Produit inconnu'] },
           ventes: '$totalSold',
           revenu: '$totalRevenue'
         }
@@ -252,14 +273,14 @@ async function getMonthlySales() {
     const result = await Order.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfYear, $lte: endOfYear },
-          status: { $in: ['completed', 'delivered'] }
+          dateCommande: { $gte: startOfYear, $lte: endOfYear },
+          statut: { $in: ['Livrée', 'Expédiée'] }
         }
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
-          ventes: { $sum: '$totalPrice' }
+          _id: { $month: '$dateCommande' },
+          ventes: { $sum: '$total' }
         }
       },
       { $sort: { _id: 1 } }
@@ -276,23 +297,41 @@ async function getMonthlySales() {
       };
     });
     
+    // Si aucune donnée, retourner des données par défaut
+    if (result.length === 0) {
+      return [
+        { mois: 'Jan', ventes: 0 },
+        { mois: 'Fév', ventes: 0 },
+        { mois: 'Mar', ventes: 0 },
+        { mois: 'Avr', ventes: 0 },
+        { mois: 'Mai', ventes: 0 },
+        { mois: 'Juin', ventes: 0 },
+        { mois: 'Juil', ventes: 0 },
+        { mois: 'Août', ventes: 0 },
+        { mois: 'Sep', ventes: 0 },
+        { mois: 'Oct', ventes: 0 },
+        { mois: 'Nov', ventes: 0 },
+        { mois: 'Déc', ventes: 0 }
+      ];
+    }
+    
     return monthlySales;
   } catch (error) {
     console.error('Erreur dans getMonthlySales:', error);
     // Retourner des données fictives en cas d'erreur
     return [
-      { mois: 'Jan', ventes: 8240.50 },
-      { mois: 'Fév', ventes: 7890.30 },
-      { mois: 'Mar', ventes: 9120.75 },
-      { mois: 'Avr', ventes: 8450.20 },
-      { mois: 'Mai', ventes: 10250.60 },
-      { mois: 'Juin', ventes: 11340.80 },
-      { mois: 'Juil', ventes: 12580.45 },
-      { mois: 'Août', ventes: 9870.30 },
-      { mois: 'Sep', ventes: 10740.55 },
-      { mois: 'Oct', ventes: 11890.70 },
-      { mois: 'Nov', ventes: 13450.90 },
-      { mois: 'Déc', ventes: 15780.25 }
+      { mois: 'Jan', ventes: 0 },
+      { mois: 'Fév', ventes: 0 },
+      { mois: 'Mar', ventes: 0 },
+      { mois: 'Avr', ventes: 0 },
+      { mois: 'Mai', ventes: 0 },
+      { mois: 'Juin', ventes: 0 },
+      { mois: 'Juil', ventes: 0 },
+      { mois: 'Août', ventes: 0 },
+      { mois: 'Sep', ventes: 0 },
+      { mois: 'Oct', ventes: 0 },
+      { mois: 'Nov', ventes: 0 },
+      { mois: 'Déc', ventes: 0 }
     ];
   }
 }
@@ -359,5 +398,42 @@ async function getSalesByCategory() {
       { categorie: 'Cosmétiques', pourcentage: 10 },
       { categorie: 'Nutrition', pourcentage: 5 }
     ];
+  }
+}
+
+// Fonction interne pour récupérer les statistiques par catégorie
+async function getSalesByCategoryInternal() {
+  try {
+    // Récupérer toutes les commandes
+    const orders = await Order.find();
+    
+    // Si aucune commande n'est trouvée
+    if (!orders || orders.length === 0) {
+      return [];
+    }
+    
+    // Initialiser les compteurs
+    let totalCommandes = orders.length;
+    let totalCommandesLivrees = 0;
+    let revenuTotal = 0;
+    
+    // Calculer les statistiques
+    orders.forEach(order => {
+      // Ajouter au total des commandes livrées
+      if (order.statut === 'Livrée') {
+        totalCommandesLivrees++;
+        revenuTotal += order.total;
+      }
+    });
+    
+    // Créer l'objet de réponse
+    return [
+      { categorie: 'Total des commandes', valeur: totalCommandes },
+      { categorie: 'Commandes livrées', valeur: totalCommandesLivrees },
+      { categorie: 'Revenu total (€)', valeur: revenuTotal.toFixed(2) }
+    ];
+  } catch (error) {
+    console.error('Erreur dans getSalesByCategoryInternal:', error);
+    return [];
   }
 } 

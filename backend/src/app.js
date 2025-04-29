@@ -33,7 +33,7 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/commandes', protect, commandesRoutes);
 app.use('/api/panier', protect, panierRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/statistics', protect, statisticsRoutes);
+app.use('/api/statistics', statisticsRoutes);
 
 // Error handling
 app.use(errorHandler);

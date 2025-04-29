@@ -346,9 +346,42 @@ class _StatistiquePageState extends State<StatistiquePage> {
   }
 
   Widget _buildSalesChart(ThemeData theme) {
-    final maxSale = _statsData['ventesMensuelles']
-        .map<double>((item) => item['ventes'] as double)
-        .reduce((double a, double b) => max(a, b));
+    // Vérifier si les données sont disponibles
+    if (_statsData['ventesMensuelles'] == null || _statsData['ventesMensuelles'].isEmpty) {
+      return Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: Text('Aucune donnée de ventes disponible'),
+          ),
+        ),
+      );
+    }
+    
+    // Trouver la vente maximale pour calculer les pourcentages
+    double maxSale = 0;
+    try {
+      maxSale = _statsData['ventesMensuelles']
+          .map<double>((item) {
+            // S'assurer que 'ventes' est convertible en double
+            if (item['ventes'] == null) return 0.0;
+            if (item['ventes'] is double) return item['ventes'] as double;
+            if (item['ventes'] is int) return (item['ventes'] as int).toDouble();
+            if (item['ventes'] is String) return double.tryParse(item['ventes'] as String) ?? 0.0;
+            return 0.0;
+          })
+          .fold<double>(0, (previous, current) => current > previous ? current : previous);
+    } catch (e) {
+      print('Erreur lors du calcul de la vente maximale: $e');
+      maxSale = 1.0; // Valeur par défaut pour éviter division par zéro
+    }
+    
+    // Éviter division par zéro
+    if (maxSale <= 0) maxSale = 1.0;
 
     return Card(
       elevation: 4,
@@ -389,7 +422,30 @@ class _StatistiquePageState extends State<StatistiquePage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: _statsData['ventesMensuelles'].map<Widget>((item) {
-                  final percentage = (item['ventes'] as double) / maxSale;
+                  // Extraire et convertir la valeur des ventes de manière sécurisée
+                  double salesValue = 0;
+                  try {
+                    if (item['ventes'] is double) {
+                      salesValue = item['ventes'] as double;
+                    } else if (item['ventes'] is int) {
+                      salesValue = (item['ventes'] as int).toDouble();
+                    } else if (item['ventes'] is String) {
+                      salesValue = double.tryParse(item['ventes'] as String) ?? 0.0;
+                    }
+                  } catch (e) {
+                    print('Erreur lors de la conversion des ventes: $e');
+                  }
+                  
+                  // Calculer le pourcentage par rapport au maximum
+                  double percentage = salesValue / maxSale;
+                  // Limiter le pourcentage entre 0 et 1
+                  percentage = percentage.clamp(0.0, 1.0);
+                  
+                  // Calculer l'opacité de manière sécurisée (entre 0.6 et 1.0)
+                  double opacity = 0.6 + (0.4 * percentage);
+                  // S'assurer que l'opacité reste dans la plage 0.0-1.0
+                  opacity = opacity.clamp(0.0, 1.0);
+                  
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 1),
@@ -399,7 +455,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                           Container(
                             height: 150 * percentage,
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.6 + (0.4 * percentage)),
+                              color: theme.colorScheme.primary.withOpacity(opacity),
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(8),
                               ),
@@ -407,7 +463,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            item['mois'],
+                            item['mois'] ?? '',
                             style: TextStyle(
                               color: Colors.grey.shade700,
                               fontSize: 12,
@@ -427,9 +483,21 @@ class _StatistiquePageState extends State<StatistiquePage> {
   }
 
   Widget _buildCategoryChart(ThemeData theme) {
-    final totalPercentage = _statsData['ventesParCategorie']
-        .map<int>((item) => item['pourcentage'] as int)
-        .reduce((int a, int b) => a + b);
+    // Verify if the data exists and has the right format
+    if (_statsData['ventesParCategorie'] == null || _statsData['ventesParCategorie'].isEmpty) {
+      return Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: Text('Aucune donnée disponible'),
+          ),
+        ),
+      );
+    }
 
     return Card(
       elevation: 4,
@@ -441,53 +509,49 @@ class _StatistiquePageState extends State<StatistiquePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: CustomPaint(
-                      painter: PieChartPainter(
-                        _statsData['ventesParCategorie'],
-                        totalPercentage,
-                        theme,
-                      ),
-                    ),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                'Statistiques des commandes',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             ..._statsData['ventesParCategorie'].map<Widget>((item) {
-              final color = _getCategoryColor(item['categorie'], theme);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item['categorie'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          item['valeur'].toString(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      item['categorie'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${item['pourcentage']}%',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: _getProgressValue(item),
+                      backgroundColor: Colors.grey.shade200,
+                      color: _getStatColor(item['categorie'], theme),
                     ),
                   ],
                 ),
@@ -497,6 +561,65 @@ class _StatistiquePageState extends State<StatistiquePage> {
         ),
       ),
     );
+  }
+
+  // Helper method to get color based on stat type
+  Color _getStatColor(String category, ThemeData theme) {
+    switch (category) {
+      case 'Total des commandes':
+        return Colors.blue;
+      case 'Commandes livrées':
+        return Colors.green;
+      case 'Revenu total (€)':
+        return theme.colorScheme.primary;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  // Helper method to get a progress value between 0-1 for each stat
+  double _getProgressValue(Map<String, dynamic> item) {
+    // For the progress bar visualization
+    String category = item['categorie'];
+    
+    // Convert to double if it's a string
+    double value = item['valeur'] is String 
+      ? double.tryParse(item['valeur']) ?? 0.0 
+      : item['valeur'] is int 
+        ? item['valeur'].toDouble() 
+        : item['valeur'] ?? 0.0;
+    
+    double result = 0.0;    
+    // Different logic for different categories
+    switch (category) {
+      case 'Total des commandes':
+        // Cap at 100 for visualization
+        result = value > 100 ? 1.0 : value / 100.0;
+        break;
+      case 'Commandes livrées':
+        // Show as percentage of total orders
+        final totalOrders = _statsData['ventesParCategorie']
+            .firstWhere((stat) => stat['categorie'] == 'Total des commandes', 
+                      orElse: () => {'valeur': 1})['valeur'];
+        // Convertir totalOrders en double si c'est une chaîne
+        double totalOrdersValue = totalOrders is String
+            ? double.tryParse(totalOrders) ?? 1.0
+            : totalOrders is int
+                ? totalOrders.toDouble()
+                : totalOrders ?? 1.0;
+        
+        result = totalOrdersValue > 0 ? value / totalOrdersValue : 0;
+        break;
+      case 'Revenu total (€)':
+        // Cap at 10000€ for visualization
+        result = value > 10000 ? 1.0 : value / 10000.0;
+        break;
+      default:
+        result = 0.5; // Default value
+    }
+    
+    // S'assurer que la valeur est dans la plage 0.0-1.0
+    return result.clamp(0.0, 1.0);
   }
 
   List<Widget> _buildBestSellersList(ThemeData theme) {
@@ -669,82 +792,26 @@ class _StatistiquePageState extends State<StatistiquePage> {
   }
 
   double _calculateYearlyTotal() {
-    return _statsData['ventesMensuelles']
-        .map<double>((item) => item['ventes'] as double)
+    try {
+      if (_statsData['ventesMensuelles'] == null || _statsData['ventesMensuelles'].isEmpty) {
+        return 0.0;
+      }
+      
+      return _statsData['ventesMensuelles']
+        .map<double>((item) {
+          // Conversion sécurisée des valeurs
+          if (item['ventes'] == null) return 0.0;
+          if (item['ventes'] is double) return item['ventes'] as double;
+          if (item['ventes'] is int) return (item['ventes'] as int).toDouble();
+          if (item['ventes'] is String) {
+            return double.tryParse(item['ventes'] as String) ?? 0.0;
+          }
+          return 0.0;
+        })
         .fold<double>(0.0, (double previous, double current) => previous + current);
-  }
-
-  Color _getCategoryColor(String category, ThemeData theme) {
-    switch (category) {
-      case 'Médicaments':
-        return Colors.blue;
-      case 'Parapharmacie':
-        return Colors.orange;
-      case 'Orthopédie':
-        return Colors.green;
-      case 'Cosmétiques':
-        return Colors.purple;
-      case 'Nutrition':
-        return Colors.red;
-      default:
-        return theme.colorScheme.primary;
-    }
-  }
-}
-
-class PieChartPainter extends CustomPainter {
-  final List<dynamic> categories;
-  final int total;
-  final ThemeData theme;
-
-  PieChartPainter(this.categories, this.total, this.theme);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    
-    var startAngle = -pi / 2; // Commencer à 12h
-    
-    for (var category in categories) {
-      final percentage = category['pourcentage'] as int;
-      final sweepAngle = 2 * pi * percentage / total;
-      
-      final paint = Paint()
-        ..style = PaintingStyle.fill
-        ..color = _getCategoryColor(category['categorie'], theme);
-      
-      canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
-      
-      startAngle += sweepAngle;
-    }
-    
-    // Dessiner un cercle blanc au centre pour créer un effet "donut"
-    final centerPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = Colors.white;
-    
-    canvas.drawCircle(center, radius * 0.6, centerPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-
-  Color _getCategoryColor(String category, ThemeData theme) {
-    switch (category) {
-      case 'Médicaments':
-        return Colors.blue;
-      case 'Parapharmacie':
-        return Colors.orange;
-      case 'Orthopédie':
-        return Colors.green;
-      case 'Cosmétiques':
-        return Colors.purple;
-      case 'Nutrition':
-        return Colors.red;
-      default:
-        return theme.colorScheme.primary;
+    } catch (e) {
+      print('Erreur dans _calculateYearlyTotal: $e');
+      return 0.0;
     }
   }
 }
