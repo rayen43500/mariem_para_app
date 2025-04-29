@@ -520,7 +520,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.shopping_bag,
+                    Icons.medication,
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
@@ -676,15 +676,15 @@ class _StatistiquePageState extends State<StatistiquePage> {
 
   Color _getCategoryColor(String category, ThemeData theme) {
     switch (category) {
-      case 'Électronique':
+      case 'Médicaments':
         return Colors.blue;
-      case 'Accessoires':
+      case 'Parapharmacie':
         return Colors.orange;
-      case 'Informatique':
+      case 'Orthopédie':
         return Colors.green;
-      case 'Wearables':
+      case 'Cosmétiques':
         return Colors.purple;
-      case 'Audio':
+      case 'Nutrition':
         return Colors.red;
       default:
         return theme.colorScheme.primary;
@@ -733,15 +733,15 @@ class PieChartPainter extends CustomPainter {
 
   Color _getCategoryColor(String category, ThemeData theme) {
     switch (category) {
-      case 'Électronique':
+      case 'Médicaments':
         return Colors.blue;
-      case 'Accessoires':
+      case 'Parapharmacie':
         return Colors.orange;
-      case 'Informatique':
+      case 'Orthopédie':
         return Colors.green;
-      case 'Wearables':
+      case 'Cosmétiques':
         return Colors.purple;
-      case 'Audio':
+      case 'Nutrition':
         return Colors.red;
       default:
         return theme.colorScheme.primary;
