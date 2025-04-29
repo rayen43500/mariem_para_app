@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
+import '../models/user_model.dart';
 
 class UtilisateursPage extends StatefulWidget {
   const UtilisateursPage({super.key});
@@ -10,75 +12,53 @@ class UtilisateursPage extends StatefulWidget {
 
 class _UtilisateursPageState extends State<UtilisateursPage> {
   final _authService = AuthService();
-  bool _isLoading = false;
+  final _userService = UserService();
+  bool _isLoading = true;
   String _searchQuery = '';
   String _selectedRole = 'Tous';
   final List<String> _roles = ['Tous', 'Admin', 'Client'];
 
-  final List<Map<String, dynamic>> _utilisateurs = [
-    {
-      'id': 'U001',
-      'nom': 'Thomas Martin',
-      'email': 'thomas.martin@example.com',
-      'telephone': '+33 6 12 34 56 78',
-      'dateInscription': '10/01/2023',
-      'role': 'Client',
-      'status': 'Actif',
-      'commandes': 5,
-      'adresse': '15 Rue des Lilas, 75001 Paris, France',
-    },
-    {
-      'id': 'U002',
-      'nom': 'Sophie Dupont',
-      'email': 'sophie.dupont@example.com',
-      'telephone': '+33 6 98 76 54 32',
-      'dateInscription': '15/02/2023',
-      'role': 'Client',
-      'status': 'Actif',
-      'commandes': 3,
-      'adresse': '8 Avenue Victor Hugo, 69002 Lyon, France',
-    },
-    {
-      'id': 'U003',
-      'nom': 'Jean Lefevre',
-      'email': 'jean.lefevre@example.com',
-      'telephone': '+33 6 45 67 89 01',
-      'dateInscription': '20/03/2023',
-      'role': 'Client',
-      'status': 'Inactif',
-      'commandes': 1,
-      'adresse': '25 Rue du Commerce, 33000 Bordeaux, France',
-    },
-    {
-      'id': 'U004',
-      'nom': 'Marie Bernard',
-      'email': 'marie.bernard@example.com',
-      'telephone': '+33 6 23 45 67 89',
-      'dateInscription': '05/04/2023',
-      'role': 'Client',
-      'status': 'Actif',
-      'commandes': 2,
-      'adresse': '12 Boulevard Pasteur, 59000 Lille, France',
-    },
-    {
-      'id': 'U005',
-      'nom': 'Admin Principal',
-      'email': 'admin@example.com',
-      'telephone': '+33 6 00 00 00 00',
-      'dateInscription': '01/01/2023',
-      'role': 'Admin',
-      'status': 'Actif',
-      'commandes': 0,
-      'adresse': '1 Place de l\'Administration, 75001 Paris, France',
-    },
-  ];
+  List<User> _utilisateurs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+  
+  // Récupérer tous les utilisateurs
+  Future<void> _fetchUsers() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final usersData = await _userService.getAllUsers();
+      
+      setState(() {
+        _utilisateurs = usersData.map((json) => User.fromJson(json)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des utilisateurs: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredUsers = _utilisateurs.where((user) {
-      final matchesRole = _selectedRole == 'Tous' || user['role'] == _selectedRole;
-      final matchesSearch = user['nom'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          user['email'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesRole = _selectedRole == 'Tous' || user.role == _selectedRole;
+      final matchesSearch = user.nom.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          user.email.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesRole && matchesSearch;
     }).toList();
 
@@ -92,6 +72,14 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // Bouton de rafraîchissement
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchUsers,
+            tooltip: 'Rafraîchir',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -178,13 +166,16 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = filteredUsers[index];
-                          return _buildUserCard(user, theme, isSmallScreen);
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _fetchUsers,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredUsers.length,
+                          itemBuilder: (context, index) {
+                            final user = filteredUsers[index];
+                            return _buildUserCard(user, theme, isSmallScreen);
+                          },
+                        ),
                       ),
           ),
         ],
@@ -199,11 +190,11 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
     );
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user, ThemeData theme, bool isSmallScreen) {
+  Widget _buildUserCard(User user, ThemeData theme, bool isSmallScreen) {
     // Couleur basée sur le statut
-    final isActive = user['status'] == 'Actif';
+    final isActive = user.isActive;
     final statusColor = isActive ? Colors.green : Colors.red;
-    final roleColor = user['role'] == 'Admin' ? Colors.deepPurple : Colors.blue;
+    final roleColor = user.role == 'Admin' ? Colors.deepPurple : Colors.blue;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -222,7 +213,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                   radius: 24,
                   backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                   child: Text(
-                    _getInitials(user['nom']),
+                    _getInitials(user.nom),
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -239,7 +230,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              user['nom'],
+                              user.nom,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -257,7 +248,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  user['role'],
+                                  user.role,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: roleColor,
@@ -273,7 +264,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  user['status'],
+                                  user.status,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: statusColor,
@@ -287,14 +278,14 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        user['email'],
+                        user.email,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
                         ),
                       ),
                       Text(
-                        user['telephone'],
+                        user.telephone,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -312,12 +303,12 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                 _buildInfoItem(
                   Icons.calendar_today,
                   'Inscrit le',
-                  user['dateInscription'],
+                  user.dateInscription,
                 ),
                 _buildInfoItem(
                   Icons.shopping_cart,
                   'Commandes',
-                  user['commandes'].toString(),
+                  user.commandes.toString(),
                 ),
                 const Spacer(),
                 Row(
@@ -350,6 +341,16 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       color: isActive ? Colors.red : Colors.green,
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        _showDeleteConfirmationDialog(user);
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      color: Colors.red,
                     ),
                   ],
                 ),
@@ -393,39 +394,79 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
     );
   }
 
-  void _toggleUserStatus(Map<String, dynamic> user) {
-    final newStatus = user['status'] == 'Actif' ? 'Inactif' : 'Actif';
-    setState(() {
-      user['status'] = newStatus;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${user['nom']} est maintenant ${newStatus.toLowerCase()}'),
-        backgroundColor: newStatus == 'Actif' ? Colors.green : Colors.red,
+  void _toggleUserStatus(User user) {
+    final newStatus = !user.isActive;
+    
+    // Montrer un indicateur de chargement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
       ),
     );
+    
+    // Appeler l'API
+    _userService.toggleUserStatus(user.id, newStatus)
+      .then((_) {
+        // Fermer l'indicateur de chargement
+        Navigator.pop(context);
+        
+        // Mettre à jour l'interface
+        setState(() {
+          final index = _utilisateurs.indexWhere((u) => u.id == user.id);
+          if (index != -1) {
+            _utilisateurs[index] = user.copyWith(
+              isActive: newStatus,
+              status: newStatus ? 'Actif' : 'Inactif'
+            );
+          }
+        });
+        
+        // Afficher un message de confirmation
+        final statusText = newStatus ? 'activé' : 'désactivé';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${user.nom} est maintenant $statusText'),
+            backgroundColor: newStatus ? Colors.green : Colors.red,
+          ),
+        );
+      })
+      .catchError((error) {
+        // Fermer l'indicateur de chargement
+        Navigator.pop(context);
+        
+        // Afficher un message d'erreur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
   }
 
-  void _showUserDetailsDialog(BuildContext context, Map<String, dynamic> user) {
+  void _showUserDetailsDialog(BuildContext context, User user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Détails de ${user['nom']}'),
+        title: Text('Détails de ${user.nom}'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailItem('ID', user['id']),
-              _buildDetailItem('Nom', user['nom']),
-              _buildDetailItem('Email', user['email']),
-              _buildDetailItem('Téléphone', user['telephone']),
-              _buildDetailItem('Adresse', user['adresse']),
-              _buildDetailItem('Date d\'inscription', user['dateInscription']),
-              _buildDetailItem('Rôle', user['role']),
-              _buildDetailItem('Statut', user['status']),
-              _buildDetailItem('Nombre de commandes', user['commandes'].toString()),
+              _buildDetailItem('ID', user.id),
+              _buildDetailItem('Nom', user.nom),
+              _buildDetailItem('Email', user.email),
+              _buildDetailItem('Téléphone', user.telephone),
+              _buildDetailItem('Adresse', user.adresse),
+              _buildDetailItem('Date d\'inscription', user.dateInscription),
+              _buildDetailItem('Rôle', user.role),
+              _buildDetailItem('Statut', user.status),
+              _buildDetailItem('Actif', user.isActive ? 'Oui' : 'Non'),
+              _buildDetailItem('Vérifié', user.isVerified ? 'Oui' : 'Non'),
+              _buildDetailItem('Nombre de commandes', user.commandes.toString()),
             ],
           ),
         ),
@@ -473,17 +514,17 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
     );
   }
 
-  void _showAddEditUserDialog(BuildContext context, {Map<String, dynamic>? user}) {
+  void _showAddEditUserDialog(BuildContext context, {User? user}) {
     final isEditing = user != null;
     
     // Si on édite, on initialise avec les valeurs existantes
-    final TextEditingController nameController = TextEditingController(text: isEditing ? user['nom'] : '');
-    final TextEditingController emailController = TextEditingController(text: isEditing ? user['email'] : '');
-    final TextEditingController phoneController = TextEditingController(text: isEditing ? user['telephone'] : '');
-    final TextEditingController addressController = TextEditingController(text: isEditing ? user['adresse'] : '');
+    final TextEditingController nameController = TextEditingController(text: isEditing ? user.nom : '');
+    final TextEditingController emailController = TextEditingController(text: isEditing ? user.email : '');
+    final TextEditingController phoneController = TextEditingController(text: isEditing ? user.telephone : '');
+    final TextEditingController addressController = TextEditingController(text: isEditing ? user.adresse : '');
     
-    String selectedRole = isEditing ? user['role'] : 'Client';
-    bool isActive = isEditing ? user['status'] == 'Actif' : true;
+    String selectedRole = isEditing ? user.role : 'Client';
+    bool isActive = isEditing ? user.isActive : true;
 
     showDialog(
       context: context,
@@ -572,33 +613,108 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                // En production, appeler une API pour sauvegarder
-                // Pour l'exemple, on met simplement à jour la liste locale
-                setState(() {
-                  if (isEditing) {
-                    // Mettre à jour l'utilisateur existant
-                    user['nom'] = nameController.text;
-                    user['email'] = emailController.text;
-                    user['telephone'] = phoneController.text;
-                    user['adresse'] = addressController.text;
-                    user['role'] = selectedRole;
-                    user['status'] = isActive ? 'Actif' : 'Inactif';
-                  } else {
-                    // Ajouter un nouvel utilisateur
-                    _utilisateurs.add({
-                      'id': 'U${(100 + _utilisateurs.length).toString().padLeft(3, '0')}',
-                      'nom': nameController.text,
-                      'email': emailController.text,
-                      'telephone': phoneController.text,
-                      'adresse': addressController.text,
-                      'dateInscription': _getCurrentDate(),
-                      'role': selectedRole,
-                      'status': isActive ? 'Actif' : 'Inactif',
-                      'commandes': 0,
-                    });
-                  }
-                });
+                // Vérifier les champs obligatoires
+                if (nameController.text.isEmpty || emailController.text.isEmpty || phoneController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Veuillez remplir tous les champs obligatoires'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Fermer le dialogue
                 Navigator.pop(context);
+                
+                // Montrer un indicateur de chargement
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                
+                // Préparer les données
+                final userData = {
+                  'nom': nameController.text,
+                  'email': emailController.text,
+                  'telephone': phoneController.text,
+                  'adresse': addressController.text,
+                  'role': selectedRole,
+                  'isActive': isActive,
+                };
+                
+                // Appeler l'API
+                if (isEditing) {
+                  // Mettre à jour l'utilisateur existant
+                  _userService.updateUser(user.id, userData)
+                    .then((updatedUser) {
+                      // Fermer l'indicateur de chargement
+                      Navigator.pop(context);
+                      
+                      // Mettre à jour l'interface
+                      setState(() {
+                        final index = _utilisateurs.indexWhere((u) => u.id == user.id);
+                        if (index != -1) {
+                          _utilisateurs[index] = User.fromJson(updatedUser);
+                        }
+                      });
+                      
+                      // Afficher un message de confirmation
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Utilisateur mis à jour avec succès'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    })
+                    .catchError((error) {
+                      // Fermer l'indicateur de chargement
+                      Navigator.pop(context);
+                      
+                      // Afficher un message d'erreur
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erreur: $error'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    });
+                } else {
+                  // Ajouter un nouvel utilisateur
+                  _userService.createUser(userData)
+                    .then((newUser) {
+                      // Fermer l'indicateur de chargement
+                      Navigator.pop(context);
+                      
+                      // Mettre à jour l'interface
+                      setState(() {
+                        _utilisateurs.add(User.fromJson(newUser));
+                      });
+                      
+                      // Afficher un message de confirmation
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Utilisateur créé avec succès'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    })
+                    .catchError((error) {
+                      // Fermer l'indicateur de chargement
+                      Navigator.pop(context);
+                      
+                      // Afficher un message d'erreur
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erreur: $error'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    });
+                }
               },
               child: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),
             ),
@@ -607,10 +723,71 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
       },
     );
   }
-
-  String _getCurrentDate() {
-    final now = DateTime.now();
-    return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+  
+  void _showDeleteConfirmationDialog(User user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: Text('Êtes-vous sûr de vouloir supprimer l\'utilisateur ${user.nom} ? Cette action est irréversible.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              
+              // Montrer un indicateur de chargement
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+              
+              // Appeler l'API
+              _userService.deleteUser(user.id)
+                .then((_) {
+                  // Fermer l'indicateur de chargement
+                  Navigator.pop(context);
+                  
+                  // Mettre à jour l'interface
+                  setState(() {
+                    _utilisateurs.removeWhere((u) => u.id == user.id);
+                  });
+                  
+                  // Afficher un message de confirmation
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${user.nom} a été supprimé avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                })
+                .catchError((error) {
+                  // Fermer l'indicateur de chargement
+                  Navigator.pop(context);
+                  
+                  // Afficher un message d'erreur
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                });
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getInitials(String name) {
