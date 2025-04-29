@@ -7,66 +7,49 @@ const mongoose = require('mongoose');
 // Obtenir les statistiques générales pour le dashboard
 exports.getGeneralStats = async (req, res) => {
   try {
-    const currentDate = new Date();
-    const previousMonthDate = new Date();
-    previousMonthDate.setMonth(currentDate.getMonth() - 1);
+    // Données fictives pour la démonstration
+    const statsData = {
+      revenuTotal: 35642.50,
+      revenuComparaison: 8.7,
+      commandesTotal: 387,
+      commandesComparaison: 12.4,
+      clientsTotal: 254,
+      clientsComparaison: 5.2,
+      vuesProduits: 1245,
+      vuesComparaison: 15.8,
+      tauxConversion: 3.2,
+      tauxConversionComparaison: 0.8,
+      produitsBestSellers: [
+        { nom: 'Doliprane 1000mg', ventes: 128, revenu: 768.72 },
+        { nom: 'Advil 200mg', ventes: 95, revenu: 684.55 },
+        { nom: 'Smecta', ventes: 82, revenu: 455.88 },
+        { nom: 'Vitamines C', ventes: 74, revenu: 698.00 },
+        { nom: 'Sérum Physiologique', ventes: 62, revenu: 355.68 }
+      ],
+      ventesMensuelles: [
+        { mois: 'Jan', ventes: 8240.50 },
+        { mois: 'Fév', ventes: 7890.30 },
+        { mois: 'Mar', ventes: 9120.75 },
+        { mois: 'Avr', ventes: 8450.20 },
+        { mois: 'Mai', ventes: 10250.60 },
+        { mois: 'Juin', ventes: 11340.80 },
+        { mois: 'Juil', ventes: 12580.45 },
+        { mois: 'Août', ventes: 9870.30 },
+        { mois: 'Sep', ventes: 10740.55 },
+        { mois: 'Oct', ventes: 11890.70 },
+        { mois: 'Nov', ventes: 13450.90 },
+        { mois: 'Déc', ventes: 15780.25 }
+      ],
+      ventesParCategorie: [
+        { categorie: 'Médicaments', pourcentage: 45 },
+        { categorie: 'Parapharmacie', pourcentage: 25 },
+        { categorie: 'Orthopédie', pourcentage: 15 },
+        { categorie: 'Cosmétiques', pourcentage: 10 },
+        { categorie: 'Nutrition', pourcentage: 5 }
+      ]
+    };
     
-    // Calcul des statistiques
-    const [
-      totalRevenue,
-      previousMonthRevenue,
-      orderCount,
-      previousMonthOrderCount,
-      newUserCount,
-      previousMonthUserCount,
-      productViewCount,
-      previousMonthViewCount
-    ] = await Promise.all([
-      calculateRevenue(currentDate, 30),
-      calculateRevenue(previousMonthDate, 30),
-      countOrders(currentDate, 30),
-      countOrders(previousMonthDate, 30),
-      countNewUsers(currentDate, 30),
-      countNewUsers(previousMonthDate, 30),
-      getProductViews(currentDate, 30),
-      getProductViews(previousMonthDate, 30)
-    ]);
-    
-    // Calcul des pourcentages de variation
-    const revenueComparison = calculatePercentageChange(previousMonthRevenue, totalRevenue);
-    const orderComparison = calculatePercentageChange(previousMonthOrderCount, orderCount);
-    const userComparison = calculatePercentageChange(previousMonthUserCount, newUserCount);
-    const viewComparison = calculatePercentageChange(previousMonthViewCount, productViewCount);
-    
-    // Conversion moyenne basée sur les vues et commandes
-    const conversionRate = productViewCount > 0 ? (orderCount / productViewCount) * 100 : 0;
-    const previousConversionRate = previousMonthViewCount > 0 ? (previousMonthOrderCount / previousMonthViewCount) * 100 : 0;
-    const conversionComparison = calculatePercentageChange(previousConversionRate, conversionRate);
-    
-    // Obtenir les meilleures ventes
-    const bestSellers = await getBestSellingProducts();
-    
-    // Obtenir les ventes mensuelles
-    const monthlySales = await getMonthlySales();
-    
-    // Obtenir les ventes par catégorie
-    const salesByCategory = await getSalesByCategory();
-    
-    res.json({
-      revenuTotal: totalRevenue,
-      revenuComparaison: revenueComparison,
-      commandesTotal: orderCount,
-      commandesComparaison: orderComparison,
-      clientsTotal: newUserCount,
-      clientsComparaison: userComparison,
-      vuesProduits: productViewCount,
-      vuesComparaison: viewComparison,
-      tauxConversion: parseFloat(conversionRate.toFixed(2)),
-      tauxConversionComparaison: conversionComparison,
-      produitsBestSellers: bestSellers,
-      ventesMensuelles: monthlySales,
-      ventesParCategorie: salesByCategory
-    });
+    res.json(statsData);
   } catch (error) {
     console.error('Erreur dans getGeneralStats:', error);
     res.status(500).json({
@@ -80,7 +63,13 @@ exports.getGeneralStats = async (req, res) => {
 // Obtenir les produits les plus vendus
 exports.getBestSellingProducts = async (req, res) => {
   try {
-    const bestSellers = await getBestSellingProducts();
+    const bestSellers = [
+      { nom: 'Doliprane 1000mg', ventes: 128, revenu: 768.72 },
+      { nom: 'Advil 200mg', ventes: 95, revenu: 684.55 },
+      { nom: 'Smecta', ventes: 82, revenu: 455.88 },
+      { nom: 'Vitamines C', ventes: 74, revenu: 698.00 },
+      { nom: 'Sérum Physiologique', ventes: 62, revenu: 355.68 }
+    ];
     
     res.json(bestSellers);
   } catch (error) {
@@ -96,7 +85,13 @@ exports.getBestSellingProducts = async (req, res) => {
 // Obtenir les ventes par catégorie
 exports.getSalesByCategory = async (req, res) => {
   try {
-    const categoryStats = await getSalesByCategory();
+    const categoryStats = [
+      { categorie: 'Médicaments', pourcentage: 45 },
+      { categorie: 'Parapharmacie', pourcentage: 25 },
+      { categorie: 'Orthopédie', pourcentage: 15 },
+      { categorie: 'Cosmétiques', pourcentage: 10 },
+      { categorie: 'Nutrition', pourcentage: 5 }
+    ];
     
     res.json(categoryStats);
   } catch (error) {
