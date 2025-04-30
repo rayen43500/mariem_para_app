@@ -33,6 +33,7 @@ class ApiConfig {
   static const String profileEndpoint = '/api/users/me';
   static const String statusEndpoint = '/api/status';
   static const String deliveryOrdersEndpoint = '/api/orders/delivery/mes-livraisons';
+  static const String updateOrderStatusEndpoint = '/api/orders/delivery/{id}/update-status';
   
   // Si true, utilise des données de test en cas d'échec de l'API
   static const bool useTestDataOnFailure = false;

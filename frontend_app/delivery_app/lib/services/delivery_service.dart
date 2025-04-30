@@ -81,7 +81,7 @@ class DeliveryService {
         throw Exception('Non authentifié');
       }
       
-      final requestUrl = '$baseUrl/api/orders/delivery/$deliveryId/status';
+      final requestUrl = '$baseUrl${ApiConfig.updateOrderStatusEndpoint.replaceAll('{id}', deliveryId)}';
       print('🔗 [API] URL de requête: $requestUrl');
       print('📝 [API] Nouveau statut: $status');
       
