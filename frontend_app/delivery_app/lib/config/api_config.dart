@@ -1,7 +1,7 @@
 class ApiConfig {
   // Configuration de l'API
   // URL de base de l'API
-  static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://localhost:5000';
   
   // Timeouts pour les requêtes HTTP (en secondes)
   static const int connectTimeout = 15;
@@ -20,12 +20,14 @@ class ApiConfig {
   };
 
   // Endpoints API
-  static const String loginEndpoint = '/auth/login';
-  static const String loginAlternativeEndpoint = '/users/login';
-  static const String registerEndpoint = '/auth/register';
-  static const String logoutEndpoint = '/auth/logout';
-  static const String refreshTokenEndpoint = '/auth/refresh-token';
-  static const String profileEndpoint = '/users/me';
+  static const String loginEndpoint = '/api/auth/login';
+  static const String loginAlternativeEndpoint = '/api/users/login';
+  static const String registerEndpoint = '/api/auth/register';
+  static const String logoutEndpoint = '/api/auth/logout';
+  static const String refreshTokenEndpoint = '/api/auth/refresh-token';
+  static const String profileEndpoint = '/api/users/me';
+  static const String statusEndpoint = '/api/status';
+  static const String deliveryOrdersEndpoint = '/api/orders/delivery/mes-livraisons';
   
   // Si true, utilise des données de test en cas d'échec de l'API
   static const bool useTestDataOnFailure = false;

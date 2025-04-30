@@ -35,6 +35,24 @@ app.use('/api/panier', protect, panierRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/statistics', statisticsRoutes);
 
+// Endpoint de statut pour tester la connexion
+app.get('/api/status', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'API opérationnelle',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  });
+});
+
 // Error handling
 app.use(errorHandler);
 

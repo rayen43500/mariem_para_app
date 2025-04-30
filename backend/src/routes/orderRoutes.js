@@ -25,6 +25,10 @@ router.get('/mobile/mes-commandes', orderController.getUserOrders); // Endpoint 
 router.get('/:id', validateObjectId(), orderController.getUserOrderDetails);
 router.get('/mobile/:id', validateObjectId(), orderController.getUserOrderDetails); // Endpoint mobile spécifique
 
+// Routes pour les livreurs
+router.get('/delivery/mes-livraisons', orderController.getDeliveryPersonOrders);
+router.put('/delivery/:id/status', validateObjectId(), orderController.updateOrderStatusByDeliveryPerson);
+
 // Routes pour les administrateurs
 router.get('/admin/:id', admin, validateObjectId(), orderController.getOrder);
 router.put('/:id/status', admin, validateObjectId(), orderController.updateOrderStatus);

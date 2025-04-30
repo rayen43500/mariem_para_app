@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/delivery_model.dart';
 import '../theme/app_theme.dart';
+import '../services/delivery_service.dart';
 
 class DeliveryDetailsScreen extends StatefulWidget {
   final Delivery delivery;
@@ -18,6 +19,8 @@ class DeliveryDetailsScreen extends StatefulWidget {
 class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
   late String _currentStatus;
   final List<String> _statusOptions = ['En attente', 'En cours', 'Livrée', 'Annulée'];
+  bool _isUpdating = false;
+  final DeliveryService _deliveryService = DeliveryService();
 
   @override
   void initState() {
@@ -38,6 +41,62 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
         return Colors.red;
       default:
         return AppTheme.darkTextColor;
+    }
+  }
+  
+  // Mettre à jour le statut de la livraison
+  Future<void> _updateDeliveryStatus() async {
+    setState(() {
+      _isUpdating = true;
+    });
+    
+    try {
+      final success = await _deliveryService.updateDeliveryStatus(
+        widget.delivery.id, 
+        _currentStatus
+      );
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Statut mis à jour: $_currentStatus'),
+              backgroundColor: _getStatusColor(_currentStatus),
+            ),
+          );
+        }
+        
+        // Revenir à l'écran précédent après une mise à jour réussie
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pop(context, true); // Retourne true pour indiquer une mise à jour réussie
+          }
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Échec de la mise à jour du statut'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+          setState(() {
+            _isUpdating = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        setState(() {
+          _isUpdating = false;
+        });
+      }
     }
   }
 
@@ -135,9 +194,9 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildInfoItem(
-                        'Heure',
-                        DateFormat('HH:mm').format(widget.delivery.dateTime),
-                        Icons.access_time,
+                        'Date',
+                        DateFormat('dd/MM/yyyy').format(widget.delivery.orderDate),
+                        Icons.calendar_today,
                       ),
                       _buildInfoItem(
                         'Distance',
@@ -213,6 +272,24 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                                     const SizedBox(width: 8),
                                     Text(
                                       widget.delivery.phone,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppTheme.darkTextColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.schedule,
+                                      size: 16,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Commandé ${widget.delivery.getElapsedTime().toLowerCase()}',
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: AppTheme.darkTextColor,
@@ -490,9 +567,11 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
+                          onPressed: _isUpdating 
+                            ? null 
+                            : () {
+                              Navigator.pop(context);
+                            },
                           icon: const Icon(Icons.arrow_back),
                           label: const Text('Retour'),
                           style: AppTheme.outlineButtonStyle,
@@ -501,21 +580,20 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Enregistrer le changement de statut
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Statut mis à jour: $_currentStatus'),
-                                backgroundColor: _getStatusColor(_currentStatus),
-                              ),
-                            );
-                            
-                            Future.delayed(const Duration(milliseconds: 500), () {
-                              Navigator.pop(context);
-                            });
-                          },
-                          icon: const Icon(Icons.save),
-                          label: const Text('Enregistrer'),
+                          onPressed: _isUpdating 
+                            ? null 
+                            : _updateDeliveryStatus,
+                          icon: _isUpdating
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save),
+                          label: Text(_isUpdating ? 'Mise à jour...' : 'Enregistrer'),
                           style: AppTheme.primaryButtonStyle,
                         ),
                       ),

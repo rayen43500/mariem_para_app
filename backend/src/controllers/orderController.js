@@ -681,3 +681,164 @@ exports.processOrderById = async (req, res) => {
     });
   }
 };
+
+// Récupérer les commandes assignées au livreur authentifié
+exports.getDeliveryPersonOrders = async (req, res) => {
+  try {
+    console.log(`Récupération des commandes assignées au livreur: ${req.user.id}`);
+    
+    // Vérifier si l'utilisateur est un livreur
+    if (req.user.role !== 'Livreur') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seuls les livreurs peuvent accéder à ces commandes.'
+      });
+    }
+    
+    // Trouver toutes les commandes assignées à ce livreur
+    const orders = await Order.find({ livreurId: req.user.id })
+      .populate('produits.produitId', 'nom prix images description stock')
+      .populate('userId', 'nom email telephone')
+      .sort({ dateCommande: -1 });
+      
+    console.log(`Nombre de commandes assignées au livreur: ${orders.length}`);
+    
+    if (!orders || orders.length === 0) {
+      console.log('Aucune commande assignée à ce livreur');
+      return res.status(200).json({
+        success: true,
+        message: 'Aucune commande assignée',
+        commandes: []
+      });
+    }
+    
+    // Formater les commandes pour l'application mobile du livreur
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      numero: `CMD-${order._id.toString().slice(-6)}`,
+      date: order.dateCommande,
+      statut: order.statut,
+      total: order.total,
+      produits: order.produits.map(item => ({
+        produitId: item.produitId ? item.produitId._id : item.produitId,
+        nomProduit: item.produitId ? item.produitId.nom : 'Produit indisponible',
+        prixUnitaire: item.prixUnitaire,
+        quantité: item.quantité,
+        images: item.produitId && item.produitId.images ? item.produitId.images : []
+      })),
+      adresseLivraison: order.adresseLivraison,
+      paymentStatus: order.paymentStatus || 'En attente',
+      dateLivraison: order.dateLivraison,
+      distance: calculateDistance(order.adresseLivraison), // Fonction fictive pour calculer la distance
+      estimatedTime: calculateDeliveryTime(order.adresseLivraison), // Fonction fictive pour estimer le temps
+      client: order.userId ? {
+        userId: order.userId._id,
+        userName: order.userId.nom || 'Client',
+        userEmail: order.userId.email || '',
+        userPhone: order.userId.telephone || ''
+      } : { userName: 'Client', userEmail: '', userPhone: '' }
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Commandes récupérées avec succès',
+      commandes: formattedOrders
+    });
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des commandes du livreur: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des commandes',
+      error: error.message
+    });
+  }
+};
+
+// Fonction fictive pour calculer la distance (dans une vraie application, utilisez un service de géolocalisation)
+function calculateDistance(address) {
+  // Cette fonction doit être remplacée par un vrai calcul de distance
+  // Par exemple, utiliser l'API Google Maps Distance Matrix
+  
+  // Pour l'exemple, nous retournons une valeur aléatoire entre 1 et 10 km
+  return Math.round((Math.random() * 9 + 1) * 10) / 10;
+}
+
+// Fonction fictive pour estimer le temps de livraison
+function calculateDeliveryTime(address) {
+  // Cette fonction doit être remplacée par un vrai calcul de temps
+  // Basé sur la distance et la vitesse moyenne
+  
+  // Pour l'exemple, nous retournons une valeur entre 10 et 30 minutes
+  return Math.round(Math.random() * 20 + 10);
+}
+
+// Mettre à jour le statut d'une commande par le livreur
+exports.updateOrderStatusByDeliveryPerson = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le statut est requis'
+      });
+    }
+    
+    // Vérifier que le statut est valide
+    const validStatuses = ['En cours', 'Livrée', 'Annulée'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Statut invalide. Les statuts valides sont: ' + validStatuses.join(', ')
+      });
+    }
+    
+    // Vérifier si l'utilisateur est un livreur
+    if (req.user.role !== 'Livreur') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé. Seuls les livreurs peuvent mettre à jour ces commandes.'
+      });
+    }
+    
+    // Trouver la commande
+    const order = await Order.findOne({ 
+      _id: req.params.id,
+      livreurId: req.user.id
+    });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Commande non trouvée ou vous n\'êtes pas autorisé à la modifier'
+      });
+    }
+    
+    // Mettre à jour le statut
+    order.statut = status;
+    
+    // Si livrée, mettre à jour la date de livraison
+    if (status === 'Livrée') {
+      order.dateLivraison = new Date();
+    }
+    
+    await order.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Statut de la commande mis à jour avec succès',
+      commande: {
+        _id: order._id,
+        statut: order.statut,
+        dateLivraison: order.dateLivraison
+      }
+    });
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour du statut',
+      error: error.message
+    });
+  }
+};

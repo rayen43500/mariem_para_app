@@ -1,9 +1,13 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/delivery_model.dart';
+import '../services/delivery_service.dart';
+import '../config/api_config.dart';
+import '../utils/token_manager.dart';
 import 'login_screen.dart';
 import 'delivery_details_screen.dart';
 
@@ -16,11 +20,48 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final List<Delivery> _deliveries = Delivery.getDummyData();
+  List<Delivery> _deliveries = [];
   String _filterStatus = 'Tous';
+  bool _isLoading = true;
+  final DeliveryService _deliveryService = DeliveryService();
   
   // Liste des statuts pour le filtre
   final List<String> _statusFilters = ['Tous', 'En attente', 'En cours', 'Livrée', 'Annulée'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDeliveries();
+  }
+  
+  // Charger les livraisons du livreur
+  Future<void> _loadDeliveries() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Récupérer les livraisons depuis l'API
+      final deliveries = await _deliveryService.getDeliveryPersonOrders();
+      
+      setState(() {
+        _deliveries = deliveries;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors du chargement des livraisons: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
 
   // Filtrer les livraisons en fonction du statut sélectionné
   List<Delivery> get _filteredDeliveries {
@@ -46,6 +87,35 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Bouton de test de connexion
+          IconButton(
+            icon: const Icon(Icons.wifi, color: Colors.white),
+            tooltip: 'Tester API',
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Test de connexion en cours...'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+              
+              final bool isConnected = await _deliveryService.testApiConnection();
+              
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isConnected ? 'Connexion OK' : 'Échec de connexion'),
+                    backgroundColor: isConnected ? AppTheme.successColor : AppTheme.errorColor,
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            tooltip: 'Configuration',
+            onPressed: _showConfigDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Déconnexion',
@@ -114,127 +184,139 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Onglet Livraisons
   Widget _buildDeliveriesTab(Size size) {
-    return Column(
-      children: [
-        // En-tête avec statistiques
-        Container(
-          padding: const EdgeInsets.only(bottom: 20),
-          decoration: const BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Statistiques de livraison
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatCard(
-                      size,
-                      '${_deliveries.where((d) => d.status == 'En attente').length}',
-                      'En attente',
-                      Icons.access_time,
-                    ),
-                    _buildStatCard(
-                      size,
-                      '${_deliveries.where((d) => d.status == 'En cours').length}',
-                      'En cours',
-                      Icons.delivery_dining,
-                    ),
-                    _buildStatCard(
-                      size,
-                      '${_deliveries.where((d) => d.status == 'Livrée').length}',
-                      'Livrées',
-                      Icons.check_circle,
-                    ),
-                  ],
-                ),
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      );
+    }
+    
+    return RefreshIndicator(
+      onRefresh: _loadDeliveries,
+      color: AppTheme.primaryColor,
+      child: Column(
+        children: [
+          // En-tête avec statistiques
+          Container(
+            padding: const EdgeInsets.only(bottom: 20),
+            decoration: const BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
-            ],
-          ),
-        ),
-        
-        // Filtres par statut
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _statusFilters.length,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              itemBuilder: (context, index) {
-                final status = _statusFilters[index];
-                final isSelected = _filterStatus == status;
-                
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(status),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _filterStatus = status;
-                      });
-                    },
-                    backgroundColor: AppTheme.secondaryColor,
-                    selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppTheme.primaryColor : AppTheme.darkTextColor,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    checkmarkColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
-          ),
-        ),
-        
-        // Liste des livraisons
-        Expanded(
-          child: _filteredDeliveries.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              children: [
+                // Statistiques de livraison
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 80,
-                        color: AppTheme.lightTextColor.withOpacity(0.5),
+                      _buildStatCard(
+                        size,
+                        '${_deliveries.where((d) => d.status == 'En attente').length}',
+                        'En attente',
+                        Icons.access_time,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Aucune livraison $_filterStatus',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.lightTextColor,
-                        ),
+                      _buildStatCard(
+                        size,
+                        '${_deliveries.where((d) => d.status == 'En cours').length}',
+                        'En cours',
+                        Icons.delivery_dining,
+                      ),
+                      _buildStatCard(
+                        size,
+                        '${_deliveries.where((d) => d.status == 'Livrée').length}',
+                        'Livrées',
+                        Icons.check_circle,
                       ),
                     ],
                   ),
-                )
-              : ListView.builder(
-                  itemCount: _filteredDeliveries.length,
-                  padding: const EdgeInsets.all(16.0),
-                  itemBuilder: (context, index) {
-                    final delivery = _filteredDeliveries[index];
-                    return _buildDeliveryCard(delivery);
-                  },
                 ),
-        ),
-      ],
+              ],
+            ),
+          ),
+          
+          // Filtres par statut
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _statusFilters.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemBuilder: (context, index) {
+                  final status = _statusFilters[index];
+                  final isSelected = _filterStatus == status;
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: FilterChip(
+                      label: Text(status),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _filterStatus = status;
+                        });
+                      },
+                      backgroundColor: AppTheme.secondaryColor,
+                      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                      labelStyle: TextStyle(
+                        color: isSelected ? AppTheme.primaryColor : AppTheme.darkTextColor,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      checkmarkColor: AppTheme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          
+          // Liste des livraisons
+          Expanded(
+            child: _filteredDeliveries.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: AppTheme.lightTextColor.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _filterStatus == 'Tous' 
+                              ? 'Aucune livraison à effectuer'
+                              : 'Aucune livraison $_filterStatus',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppTheme.lightTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _filteredDeliveries.length,
+                    padding: const EdgeInsets.all(16.0),
+                    itemBuilder: (context, index) {
+                      final delivery = _filteredDeliveries[index];
+                      return _buildDeliveryCard(delivery);
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -278,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDeliveryCard(Delivery delivery) {
     final String statusEmoji = Delivery.getStatusEmoji(delivery.status);
     final bool isUrgent = delivery.status == 'En attente' && 
-                         delivery.dateTime.difference(DateTime.now()).inHours < 2;
+                         DateTime.now().difference(delivery.orderDate).inHours < 2;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -291,14 +373,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           // Navigation vers les détails de la livraison
-          Navigator.push(
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => DeliveryDetailsScreen(delivery: delivery),
             ),
           );
+          
+          // Si le statut a été mis à jour, recharger les livraisons
+          if (result == true) {
+            _loadDeliveries();
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -326,18 +413,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 16, color: AppTheme.lightTextColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('HH:mm').format(delivery.dateTime),
-                        style: const TextStyle(
-                          color: AppTheme.lightTextColor,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    delivery.getElapsedTime(),
+                    style: const TextStyle(
+                      color: AppTheme.lightTextColor,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -573,6 +654,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Onglet Historique
   Widget _buildHistoryTab() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      );
+    }
+    
     // Filtrer les livraisons terminées ou annulées
     final completedDeliveries = _deliveries.where(
       (d) => d.status == 'Livrée' || d.status == 'Annulée'
@@ -611,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHistoryCard(Delivery delivery) {
     final String statusEmoji = Delivery.getStatusEmoji(delivery.status);
-    final String formattedDate = DateFormat('dd/MM/yyyy').format(delivery.dateTime);
+    final String formattedDate = DateFormat('dd/MM/yyyy').format(delivery.orderDate);
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -914,6 +1001,88 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Mettre à jour le statut d'une livraison
+  Future<void> _updateDeliveryStatus(String deliveryId, String status) async {
+    try {
+      final success = await _deliveryService.updateDeliveryStatus(deliveryId, status);
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Statut mis à jour: $status'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        
+        // Recharger les livraisons après mise à jour
+        _loadDeliveries();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Échec de la mise à jour du statut'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  // Afficher les détails de configuration
+  void _showConfigDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Configuration API'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('URL de base: ${ApiConfig.baseUrl}'),
+              const SizedBox(height: 8),
+              Text('Endpoint livraisons: ${ApiConfig.deliveryOrdersEndpoint}'),
+              const SizedBox(height: 8),
+              Text('Endpoint statut: ${ApiConfig.statusEndpoint}'),
+              const SizedBox(height: 16),
+              const Text('Jetons d\'authentification:'),
+              FutureBuilder<String?>(
+                future: TokenManager.getToken(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  }
+                  if (snapshot.hasError) {
+                    return Text('Erreur: ${snapshot.error}');
+                  }
+                  final token = snapshot.data;
+                  return Text(
+                    token == null ? 'Aucun token trouvé' : 'Token: ${token.substring(0, min(20, token.length))}...',
+                    style: TextStyle(
+                      color: token == null ? Colors.red : Colors.green,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+        ],
       ),
     );
   }
