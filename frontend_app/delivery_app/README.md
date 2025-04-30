@@ -19,3 +19,7 @@ samples, guidance on mobile development, and a full API reference.
 //////admin@test.com//////
 
 //////MotDePasse1@//////
+
+
+livreur@l.com
+Password123!
