@@ -6,7 +6,7 @@ import '../models/delivery_model.dart';
 import '../utils/token_manager.dart';
 
 class DeliveryService {
-  final String baseUrl = ApiConfig.baseUrl;
+  String get baseUrl => ApiConfig.getBaseUrl();
   
   // Récupérer les commandes assignées au livreur
   Future<List<Delivery>> getDeliveryPersonOrders() async {
@@ -39,7 +39,7 @@ class DeliveryService {
         print('📄 [API] Données reçues: ${response.body.substring(0, min(100, response.body.length))}...');
         
         if (jsonData['success'] == true) {
-          final List<dynamic> commandesData = jsonData['commandes'];
+          final List<dynamic> commandesData = jsonData['commandes'] ?? [];
           
           print('📦 [API] Nombre de commandes reçues: ${commandesData.length}');
           

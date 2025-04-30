@@ -32,7 +32,7 @@ class AuthService {
         }
         
         // Stocker les informations utilisateur et les tokens
-        await storage.write(key: 'token', value: data['token']);
+        await storage.write(key: 'auth_token', value: data['token']);
         if (data.containsKey('refreshToken')) {
           await storage.write(key: 'refreshToken', value: data['refreshToken']);
         }
@@ -57,14 +57,14 @@ class AuthService {
   
   // Déconnexion et suppression des données stockées
   Future<void> logout() async {
-    await storage.delete(key: 'token');
+    await storage.delete(key: 'auth_token');
     await storage.delete(key: 'refreshToken');
     await storage.delete(key: 'user');
   }
   
   // Vérifier si l'utilisateur est connecté
   Future<bool> isLoggedIn() async {
-    final token = await storage.read(key: 'token');
+    final token = await storage.read(key: 'auth_token');
     return token != null;
   }
   
@@ -192,7 +192,7 @@ class AuthService {
   // Récupérer le token d'authentification avec vérification de validité
   Future<String?> getToken() async {
     try {
-      final token = await storage.read(key: 'token');
+      final token = await storage.read(key: 'auth_token');
       
       if (token == null) {
         if (ApiConfig.enableDetailedLogs) {
@@ -213,7 +213,7 @@ class AuthService {
           try {
             final newTokenData = await refreshToken(refreshTokenValue);
             final newToken = newTokenData['token'];
-            await storage.write(key: 'token', value: newToken);
+            await storage.write(key: 'auth_token', value: newToken);
             
             if (ApiConfig.enableDetailedLogs) {
               print('Token rafraîchi avec succès');

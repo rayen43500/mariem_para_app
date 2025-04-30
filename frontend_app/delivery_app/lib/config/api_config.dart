@@ -3,6 +3,11 @@ class ApiConfig {
   // URL de base de l'API
   static const String baseUrl = 'http://localhost:5000';
   
+  // Méthode pour obtenir l'URL de base adaptée à l'environnement
+  static String getBaseUrl() {
+    return baseUrl;
+  }
+  
   // Timeouts pour les requêtes HTTP (en secondes)
   static const int connectTimeout = 15;
   static const int receiveTimeout = 15;
