@@ -31,12 +31,12 @@ class DeliveryPerson {
       nom: json['name'] ?? json['nom'] ?? '',
       email: json['email'] ?? '',
       telephone: json['phone'] ?? json['telephone'] ?? '',
-      status: json['status'] ?? 'Disponible',
+      status: json['status'] ?? (json['isActive'] == true ? 'Disponible' : 'Inactif'),
       livraisons: json['livraisons'] ?? json['totalDeliveries'] ?? 0,
       rating: (json['rating'] ?? 0.0).toDouble(),
       zone: json['zone'] ?? '',
       vehicule: json['vehicule'] ?? '',
-      photo: json['photo'] ?? 'https://picsum.photos/200/300',
+      photo: json['photo'] ?? json['avatar'] ?? 'https://picsum.photos/200/300',
       isActive: json['isActive'] ?? true,
     );
   }

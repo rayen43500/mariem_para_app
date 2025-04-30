@@ -219,132 +219,259 @@ class _LivreursPageState extends State<LivreursPage> {
     String nom = '';
     String email = '';
     String telephone = '';
-    String password = 'Livreur123@'; // Mot de passe par défaut
-
+    String password = '';
+    String confirmPassword = '';
+    String zone = '';
+    String vehicule = '';
+    bool showPassword = false;
+    
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Ajouter un nouveau livreur'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Nom complet',
-                      icon: Icon(Icons.person),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un nom';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      nom = value!;
-                    },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Créer un compte livreur'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Informations de base
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Nom complet',
+                          icon: Icon(Icons.person),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un nom';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          nom = value!;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          icon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un email';
+                          }
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (!emailRegex.hasMatch(value)) {
+                            return 'Veuillez entrer un email valide';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          email = value!;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Téléphone',
+                          icon: Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un numéro de téléphone';
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          telephone = value!;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Informations complémentaires
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Zone de livraison',
+                          icon: Icon(Icons.location_on),
+                          hintText: 'Ex: Paris Centre, Lyon Est...',
+                        ),
+                        onSaved: (value) {
+                          zone = value ?? '';
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Véhicule',
+                          icon: Icon(Icons.directions_bike),
+                          hintText: 'Ex: Scooter, Vélo, Voiture...',
+                        ),
+                        onSaved: (value) {
+                          vehicule = value ?? '';
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Informations de compte
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Informations de connexion',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Mot de passe',
+                          icon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              showPassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                showPassword = !showPassword;
+                              });
+                            },
+                          ),
+                        ),
+                        obscureText: !showPassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un mot de passe';
+                          }
+                          if (value.length < 8) {
+                            return 'Le mot de passe doit contenir au moins 8 caractères';
+                          }
+                          // Vérifier que le mot de passe contient au moins une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial
+                          final hasUppercase = value.contains(RegExp(r'[A-Z]'));
+                          final hasLowercase = value.contains(RegExp(r'[a-z]'));
+                          final hasDigits = value.contains(RegExp(r'[0-9]'));
+                          final hasSpecialCharacters = value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+                          
+                          if (!hasUppercase || !hasLowercase || !hasDigits || !hasSpecialCharacters) {
+                            return 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial';
+                          }
+                          
+                          return null;
+                        },
+                        onSaved: (value) {
+                          password = value!;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Confirmer le mot de passe',
+                          icon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              showPassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                showPassword = !showPassword;
+                              });
+                            },
+                          ),
+                        ),
+                        obscureText: !showPassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez confirmer le mot de passe';
+                          }
+                          // Nous utiliserons un contrôleur d'édition pour valider que les deux mots de passe sont identiques
+                          return null;
+                        },
+                        onSaved: (value) {
+                          confirmPassword = value!;
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      icon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un email';
-                      }
-                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                      if (!emailRegex.hasMatch(value)) {
-                        return 'Veuillez entrer un email valide';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      email = value!;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Téléphone',
-                      icon: Icon(Icons.phone),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un numéro de téléphone';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      telephone = value!;
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  formKey.currentState!.save();
-                  
-                  try {
+              actions: [
+                TextButton(
+                  onPressed: () {
                     Navigator.of(context).pop();
-                    
-                    // Afficher un indicateur de chargement
-                    setState(() {
-                      _isLoading = true;
-                    });
-                    
-                    final livreurData = {
-                      'nom': nom,
-                      'email': email,
-                      'telephone': telephone,
-                      'password': password,
-                      'role': 'livreur',
-                    };
-                    
-                    await _deliveryService.createDeliveryPerson(livreurData);
-                    
-                    // Recharger la liste des livreurs
-                    await _fetchLivreurs();
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Livreur ajouté avec succès'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erreur lors de l\'ajout du livreur: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Ajouter'),
-            ),
-          ],
+                  },
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      formKey.currentState!.save();
+                      
+                      // Vérifier que les mots de passe correspondent
+                      if (password != confirmPassword) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Les mots de passe ne correspondent pas'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      try {
+                        Navigator.of(context).pop();
+                        
+                        // Afficher un indicateur de chargement
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        
+                        final livreurData = {
+                          'nom': nom,
+                          'email': email,
+                          'telephone': telephone,
+                          'password': password,
+                          'role': 'Livreur',
+                          'zone': zone,
+                          'vehicule': vehicule,
+                        };
+                        
+                        // Utiliser le service pour créer un livreur
+                        await _deliveryService.createDeliveryPerson(livreurData);
+                        
+                        // Recharger la liste des livreurs
+                        await _fetchLivreurs();
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Compte livreur créé avec succès'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } catch (e) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur lors de la création du compte livreur: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Créer le compte'),
+                ),
+              ],
+            );
+          }
         );
       },
     );

@@ -115,18 +115,32 @@ class DeliveryService {
         throw Exception('Authentification requise. Veuillez vous reconnecter.');
       }
       
-      _logger.i('Création d\'un nouveau livreur: ${livreurData['name']}');
+      _logger.i('Création d\'un nouveau compte livreur: ${livreurData['nom']}');
       
       // S'assurer que nous envoyons les bons champs selon le modèle du livreur
       Map<String, dynamic> requestData = {
-        'name': livreurData['name'] ?? livreurData['nom'],
+        'nom': livreurData['nom'],
         'email': livreurData['email'],
-        'phone': livreurData['phone'] ?? livreurData['telephone'],
-        'password': livreurData['password'] ?? 'Livreur123@' // Mot de passe par défaut
+        'telephone': livreurData['telephone'],
+        'motDePasse': livreurData['password'],
+        'role': 'Livreur',
+        'isActive': true,
       };
       
+      // Ajouter les champs optionnels s'ils sont présents
+      if (livreurData['zone'] != null && livreurData['zone'].toString().isNotEmpty) {
+        requestData['zone'] = livreurData['zone'];
+      }
+      
+      if (livreurData['vehicule'] != null && livreurData['vehicule'].toString().isNotEmpty) {
+        requestData['vehicule'] = livreurData['vehicule'];
+      }
+      
+      _logger.i('Données envoyées: $requestData');
+      
+      // Utiliser l'endpoint d'enregistrement pour créer un nouvel utilisateur avec rôle de livreur
       final response = await http.post(
-        Uri.parse('$baseUrl/api/admin/delivery-persons'),
+        Uri.parse('$baseUrl/api/auth/register'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -137,16 +151,16 @@ class DeliveryService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = json.decode(response.body);
         
-        _logger.i('Livreur créé avec succès');
+        _logger.i('Compte livreur créé avec succès');
         
-        if (data['deliveryPerson'] != null) {
-          return data['deliveryPerson'];
+        if (data['user'] != null) {
+          return data['user'];
         } else {
           return data;
         }
       } else {
         _logger.e('Erreur API: ${response.statusCode} ${response.body}');
-        throw Exception('Erreur lors de la création du livreur: ${_getErrorMessage(response)}');
+        throw Exception('Erreur lors de la création du compte livreur: ${_getErrorMessage(response)}');
       }
     } catch (e) {
       _logger.e('Exception lors de la création du livreur: $e');
