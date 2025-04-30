@@ -654,49 +654,102 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Onglet Historique
   Widget _buildHistoryTab() {
+    // Filtrer seulement les livraisons terminées (statut "Livrée")
+    final List<Delivery> completedDeliveries = _deliveries
+        .where((delivery) => delivery.status == 'Livrée')
+        .toList();
+    
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppTheme.primaryColor),
       );
     }
-    
-    // Filtrer les livraisons terminées ou annulées
-    final completedDeliveries = _deliveries.where(
-      (d) => d.status == 'Livrée' || d.status == 'Annulée'
-    ).toList();
-    
-    return completedDeliveries.isEmpty
-        ? Center(
+
+    return RefreshIndicator(
+      onRefresh: _loadDeliveries,
+      color: AppTheme.primaryColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête de l'onglet
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.history,
-                  size: 80,
-                  color: AppTheme.lightTextColor.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
                 const Text(
-                  'Aucun historique de livraison',
+                  'Historique de Livraisons',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.lightTextColor,
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${completedDeliveries.length} livraison${completedDeliveries.length > 1 ? 's' : ''} terminée${completedDeliveries.length > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
-          )
-        : ListView.builder(
-            itemCount: completedDeliveries.length,
-            padding: const EdgeInsets.all(16.0),
-            itemBuilder: (context, index) {
-              final delivery = completedDeliveries[index];
-              return _buildHistoryCard(delivery);
-            },
-          );
+          ),
+          
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Livraisons terminées',
+              style: AppTheme.subheadingTextStyle,
+            ),
+          ),
+          
+          Expanded(
+            child: completedDeliveries.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: AppTheme.lightTextColor.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Aucune livraison terminée',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppTheme.lightTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: completedDeliveries.length,
+                    padding: const EdgeInsets.all(16.0),
+                    itemBuilder: (context, index) {
+                      final delivery = completedDeliveries[index];
+                      return _buildHistoryDeliveryCard(delivery);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildHistoryCard(Delivery delivery) {
+  Widget _buildHistoryDeliveryCard(Delivery delivery) {
     final String statusEmoji = Delivery.getStatusEmoji(delivery.status);
     final String formattedDate = DateFormat('dd/MM/yyyy').format(delivery.orderDate);
     

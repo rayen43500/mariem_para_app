@@ -83,7 +83,18 @@ class DeliveryService {
       
       final requestUrl = '$baseUrl${ApiConfig.updateOrderStatusEndpoint.replaceAll('{id}', deliveryId)}';
       print('🔗 [API] URL de requête: $requestUrl');
-      print('📝 [API] Nouveau statut: $status');
+      print('📝 [API] Nouveau statut demandé: $status');
+      
+      // Convertir le statut frontend en statut backend
+      String backendStatus = status;
+      if (status == 'En cours') {
+        backendStatus = 'Expédiée';
+        print('🔄 [API] Conversion du statut: "En cours" -> "Expédiée"');
+      }
+      
+      // Inspecter l'objet status envoyé
+      final bodyJson = json.encode({"status": backendStatus});
+      print('📦 [API] Corps de la requête: $bodyJson');
       
       final response = await http.put(
         Uri.parse(requestUrl),
@@ -91,12 +102,11 @@ class DeliveryService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'status': status,
-        }),
+        body: bodyJson,
       );
       
       print('📡 [API] Statut de réponse: ${response.statusCode}');
+      print('📄 [API] Corps de la réponse: ${response.body}');
       
       if (response.statusCode == 200) {
         print('✅ [API] Mise à jour réussie');

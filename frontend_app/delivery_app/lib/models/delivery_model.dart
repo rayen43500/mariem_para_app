@@ -137,7 +137,7 @@ class Delivery {
   static String getStatusEmoji(String status) {
     switch (status.toLowerCase()) {
       case 'en attente':
-        return '⏱️';
+        return '⏳';
       case 'en cours':
         return '🚚';
       case 'livrée':
