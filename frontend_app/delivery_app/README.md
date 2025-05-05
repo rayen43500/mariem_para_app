@@ -23,3 +23,6 @@ samples, guidance on mobile development, and a full API reference.
 
 livreur@l.com
 Password123!
+
+client@c.com    
+Password123

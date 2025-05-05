@@ -10,6 +10,7 @@ import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'category_screen.dart';
 import 'orders_screen.dart';
+import 'chat_screen.dart';
 import '../theme/app_theme.dart' as theme;
 
 class HomeScreen extends StatefulWidget {
@@ -249,6 +250,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   _selectedIndex = 2;
                 });
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Stack(
+                children: [
+                  const Icon(Icons.smart_toy_outlined, color: Color(0xFF5C6BC0)),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 8,
+                        minHeight: 8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              title: const Text('Chat IA Parapharma'),
+              subtitle: const Text('Conseils personnalisés'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatScreen(),
+                  ),
+                );
               },
             ),
             ListTile(

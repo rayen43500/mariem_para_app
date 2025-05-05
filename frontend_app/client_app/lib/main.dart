@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/chat_screen.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/chat_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +38,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -56,6 +59,7 @@ class MyApp extends StatelessWidget {
               },
               '/login': (context) => const LoginScreen(),
               '/profile': (context) => const ProfileScreen(),
+              '/chat': (context) => const ChatScreen(),
             },
           );
         },
