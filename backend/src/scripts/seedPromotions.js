@@ -58,7 +58,7 @@ const seedPromotions = async () => {
         isActive: true,
         description: '20% de réduction sur tous les produits de la catégorie'
       },
-      // Promotion sur un produit spécifique (10€ de réduction)
+      // Promotion sur un produit spécifique (10 DT de réduction)
       {
         nom: 'Offre spéciale produit',
         type: 'produit',
@@ -70,7 +70,7 @@ const seedPromotions = async () => {
         dateFin: inTwoWeeks,
         isActive: true,
         codePromo: 'PROD10',
-        description: '10€ de réduction sur ce produit'
+        description: '10 DT de réduction sur ce produit'
       },
       // Promotion flash sur un produit (50% de réduction)
       {

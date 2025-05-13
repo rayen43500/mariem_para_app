@@ -3,20 +3,23 @@ import '../config/theme.dart';
 import '../services/product_service.dart';
 import '../services/cart_service.dart';
 import '../services/promotion_service.dart';
+import '../widgets/product_reviews.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
+  final int initialTabIndex;
 
   const ProductDetailScreen({
     Key? key,
     required this.productId,
+    this.initialTabIndex = 0,
   }) : super(key: key);
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTickerProviderStateMixin {
   final ProductService _productService = ProductService();
   final CartService _cartService = CartService();
   final PromotionService _promotionService = PromotionService();
@@ -29,11 +32,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   double _finalPrice = 0;
   double _originalPrice = 0;
   double _discount = 0;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex);
     _loadProductDetails();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProductDetails() async {
@@ -125,18 +136,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             },
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.description),
+              text: 'Détails',
+            ),
+            Tab(
+              icon: Icon(Icons.star),
+              text: 'Avis',
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildProductDetails(),
+          : _buildProductContent(),
     );
   }
 
-  Widget _buildProductDetails() {
+  Widget _buildProductContent() {
     if (_product == null) {
       return const Center(child: Text('Produit non trouvé'));
     }
 
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        // Onglet Détails du produit
+        _buildProductDetails(),
+        
+        // Onglet Avis clients
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: ProductReviews(
+            productId: widget.productId,
+            showAddReview: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductDetails() {
     final inStock = (_product!['stock'] ?? 0) > 0;
 
     return SingleChildScrollView(
@@ -371,6 +414,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Text(
                       inStock ? 'Ajouter au panier' : 'Indisponible',
                       style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+                
+                // Bouton pour voir les avis (sur l'onglet détails)
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      _tabController.animateTo(1); // Basculer vers l'onglet des avis
+                    },
+                    icon: const Icon(Icons.star),
+                    label: const Text('Voir les avis clients'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.amber.shade800,
                     ),
                   ),
                 ),

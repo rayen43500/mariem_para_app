@@ -19,7 +19,30 @@ const statisticsRoutes = require('./routes/statisticsRoutes');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback) {
+    // Autoriser les requêtes sans origine (comme les appels d'API mobile)
+    if (!origin) return callback(null, true);
+    
+    // Autoriser toutes les origines localhost, quel que soit le port
+    if (origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    // Liste des autres origines autorisées si nécessaire
+    const allowedOrigins = [
+      'http://127.0.0.1:5500',
+      // Ajoutez d'autres origines non-localhost si nécessaire
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqué par la politique CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

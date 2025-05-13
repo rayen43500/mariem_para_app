@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../services/product_service.dart';
 import '../services/cart_service.dart';
+import '../widgets/product_rating_badge.dart';
 import 'product_detail_screen.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -474,6 +475,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  ProductRatingBadge(
+                    productId: id,
+                    size: 12,
+                    showCount: false,
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
@@ -526,6 +533,28 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         ),
                       ),
                       child: Text(inStock ? 'Ajouter' : 'Rupture'),
+                    ),
+                  ),
+                  // Bouton Avis clients
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProductDetailScreen(
+                            productId: id,
+                            initialTabIndex: 1, // Index de l'onglet des avis
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.rate_review, size: 14),
+                    label: const Text('Avis clients'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.amber.shade800,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      visualDensity: VisualDensity.compact,
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                 ],

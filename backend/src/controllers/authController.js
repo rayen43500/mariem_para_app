@@ -235,4 +235,38 @@ exports.refreshToken = async (req, res) => {
     console.error(error);
     res.status(401).json({ message: 'Refresh token invalide' });
   }
+};
+
+// Changement de mot de passe
+exports.changePassword = async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+    
+    // Vérification que l'utilisateur est bien celui qui fait la demande
+    if (req.user._id.toString() !== userId) {
+      return res.status(403).json({ message: 'Vous n\'êtes pas autorisé à modifier ce mot de passe' });
+    }
+    
+    // Récupérer l'utilisateur
+    const user = await User.findById(userId).select('+motDePasse');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Vérifier le mot de passe actuel
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Mot de passe actuel incorrect' });
+    }
+    
+    // Mettre à jour le mot de passe
+    user.motDePasse = newPassword;
+    await user.save();
+    
+    res.json({ message: 'Mot de passe modifié avec succès' });
+  } catch (error) {
+    console.error('Erreur lors du changement de mot de passe:', error);
+    res.status(500).json({ message: 'Erreur serveur lors du changement de mot de passe' });
+  }
 }; 

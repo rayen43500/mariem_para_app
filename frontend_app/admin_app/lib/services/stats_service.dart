@@ -151,7 +151,7 @@ class StatsService {
       List<Map<String, dynamic>> categoryStats = [
         {'categorie': 'Total des commandes', 'valeur': totalOrders},
         {'categorie': 'Commandes livrées', 'valeur': deliveredOrdersCount},
-        {'categorie': 'Revenu total (€)', 'valeur': totalRevenue.toStringAsFixed(2)},
+        {'categorie': 'Revenu total (DT)', 'valeur': totalRevenue.toStringAsFixed(2)},
       ];
       
       // Meilleurs produits vendus
@@ -299,7 +299,7 @@ class StatsService {
       'ventesParCategorie': [
         {'categorie': 'Total des commandes', 'valeur': 0},
         {'categorie': 'Commandes livrées', 'valeur': 0},
-        {'categorie': 'Revenu total (€)', 'valeur': '0.00'},
+        {'categorie': 'Revenu total (DT)', 'valeur': '0.00'},
       ],
     };
   }

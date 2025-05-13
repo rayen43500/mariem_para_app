@@ -8,9 +8,14 @@ import 'screens/chat_screen.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
+import 'services/local_review_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialiser les données d'avis de test
+  final reviewService = LocalReviewService();
+  await reviewService.initializeWithMockData();
   
   // Définir l'orientation de l'application en mode portrait uniquement
   SystemChrome.setPreferredOrientations([

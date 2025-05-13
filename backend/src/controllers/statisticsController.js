@@ -111,7 +111,7 @@ exports.getSalesByCategory = async (req, res) => {
     const categoryStats = [
       { categorie: 'Total des commandes', valeur: totalCommandes },
       { categorie: 'Commandes livrées', valeur: totalCommandesLivrees },
-      { categorie: 'Revenu total (€)', valeur: revenuTotal.toFixed(2) }
+      { categorie: 'Revenu total (DT)', valeur: revenuTotal.toFixed(2) }
     ];
     
     res.json(categoryStats);
@@ -430,7 +430,7 @@ async function getSalesByCategoryInternal() {
     return [
       { categorie: 'Total des commandes', valeur: totalCommandes },
       { categorie: 'Commandes livrées', valeur: totalCommandesLivrees },
-      { categorie: 'Revenu total (€)', valeur: revenuTotal.toFixed(2) }
+      { categorie: 'Revenu total (DT)', valeur: revenuTotal.toFixed(2) }
     ];
   } catch (error) {
     console.error('Erreur dans getSalesByCategoryInternal:', error);

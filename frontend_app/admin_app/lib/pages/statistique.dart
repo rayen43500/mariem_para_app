@@ -611,7 +611,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
         result = totalOrdersValue > 0 ? value / totalOrdersValue : 0;
         break;
       case 'Revenu total (DT)':
-        // Cap at 10000€ for visualization
+        // Cap at 10000 DT for visualization
         result = value > 10000 ? 1.0 : value / 10000.0;
         break;
       default:

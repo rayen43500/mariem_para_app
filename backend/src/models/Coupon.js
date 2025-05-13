@@ -81,7 +81,7 @@ couponSchema.methods.isValid = function(orderAmount = 0) {
   if (orderAmount < this.minAmount) {
     return { 
       valid: false, 
-      message: `Ce code promo nécessite un montant minimum de ${this.minAmount}€`
+      message: `Ce code promo nécessite un montant minimum de ${this.minAmount} DT`
     };
   }
   

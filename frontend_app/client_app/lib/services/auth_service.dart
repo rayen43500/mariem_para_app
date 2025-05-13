@@ -258,4 +258,72 @@ class AuthService {
       return false;
     }
   }
+  
+  // Mise à jour du profil utilisateur (nom, téléphone, etc.)
+  Future<Map<String, dynamic>> updateUserProfile(String userId, Map<String, dynamic> userData) async {
+    try {
+      final token = await getToken();
+      
+      if (token == null) {
+        throw Exception('Utilisateur non authentifié');
+      }
+      
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(userData),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final updatedUser = data['user'] ?? data;
+        
+        // Mettre à jour les informations stockées localement
+        await _storage.write(key: 'user', value: json.encode(updatedUser));
+        
+        return updatedUser;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Erreur lors de la mise à jour du profil');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la mise à jour du profil: ${e.toString()}');
+    }
+  }
+  
+  // Changer le mot de passe
+  Future<bool> changePassword(String userId, String currentPassword, String newPassword) async {
+    try {
+      final token = await getToken();
+      
+      if (token == null) {
+        throw Exception('Utilisateur non authentifié');
+      }
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'userId': userId,
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Erreur lors du changement de mot de passe');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors du changement de mot de passe: ${e.toString()}');
+    }
+  }
 } 

@@ -6,12 +6,14 @@ import '../services/category_service.dart';
 import '../services/product_service.dart';
 import '../services/promotion_service.dart';
 import '../services/cart_service.dart';
+import '../widgets/product_rating_badge.dart';
 import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'category_screen.dart';
 import 'orders_screen.dart';
 import 'chat_screen.dart';
 import '../theme/app_theme.dart' as theme;
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -303,24 +305,14 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Mon profil'),
               selected: _selectedIndex == 4,
               onTap: () {
-                setState(() {
-                  _selectedIndex = 4;
-                });
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Paramètres'),
-              selected: _selectedIndex == 5,
-              onTap: () {
-                setState(() {
-                  _selectedIndex = 5;
-                });
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Déconnexion'),
@@ -392,8 +384,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return _buildOrdersTab();
       case 4:
         return _buildProfileTab();
-      case 5:
-        return _buildSettingsTab();
       default:
         return _buildHomeTab();
     }
@@ -869,6 +859,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
+                                ProductRatingBadge(
+                                  productId: product['_id'],
+                                  size: 14,
+                                  showCount: false,
+                                ),
+                                const SizedBox(height: 4),
                                 _buildPriceSection(product),
                                 const Spacer(),
                                 // Bouton Ajouter au panier
@@ -896,6 +892,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: const Text('Détails'),
                                     style: TextButton.styleFrom(
                                       foregroundColor: AppTheme.primaryColor,
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      visualDensity: VisualDensity.compact,
+                                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                                // Bouton Avis clients
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    onPressed: () => _navigateToProductReviews(product),
+                                    icon: const Icon(Icons.rate_review, size: 14),
+                                    label: const Text('Avis clients'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.amber.shade800,
                                       padding: const EdgeInsets.symmetric(vertical: 4),
                                       visualDensity: VisualDensity.compact,
                                       textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -1120,6 +1131,19 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToProductDetail(Map<String, dynamic> product) {
     // Implémenter la navigation vers le détail du produit
     print('Naviguer vers le produit: ${product['nom']}');
+  }
+
+  // Navigation vers le détail d'un produit avec l'onglet avis sélectionné
+  void _navigateToProductReviews(Map<String, dynamic> product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(
+          productId: product['_id'],
+          initialTabIndex: 1, // Index de l'onglet des avis
+        ),
+      ),
+    );
   }
 
   Widget _buildCategoriesTab() {
@@ -1497,13 +1521,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSettingsTab() {
-    return const Center(
-      child: Text('Paramètres - À venir'),
-    );
-  }
-
-  // Widget pour la bannière promotionnelle
   Widget _buildPromotionBanner() {
     if (_promotions.isEmpty) {
       return const SizedBox.shrink();

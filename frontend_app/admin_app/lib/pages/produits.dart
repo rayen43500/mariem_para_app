@@ -437,7 +437,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '€${product.prix.toStringAsFixed(2)} ',
+                                  text: 'DT${product.prix.toStringAsFixed(2)} ',
                                   style: TextStyle(
                                     decoration: TextDecoration.lineThrough,
                                     fontSize: 13,
