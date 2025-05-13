@@ -136,7 +136,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                       children: [
                         _buildStatCard(
                           'Revenu',
-                          '€${_statsData['revenuTotal'].toStringAsFixed(2)}',
+                          'DT${_statsData['revenuTotal'].toStringAsFixed(2)}',
                           _statsData['revenuComparaison'],
                           Icons.attach_money,
                           Colors.green,
@@ -407,7 +407,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Total: €${_calculateYearlyTotal().toStringAsFixed(2)}',
+                    'Total: DT${_calculateYearlyTotal().toStringAsFixed(2)}',
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -570,7 +570,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
         return Colors.blue;
       case 'Commandes livrées':
         return Colors.green;
-      case 'Revenu total (€)':
+      case 'Revenu total (DT)':
         return theme.colorScheme.primary;
       default:
         return Colors.orange;
@@ -610,7 +610,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
         
         result = totalOrdersValue > 0 ? value / totalOrdersValue : 0;
         break;
-      case 'Revenu total (€)':
+      case 'Revenu total (DT)':
         // Cap at 10000€ for visualization
         result = value > 10000 ? 1.0 : value / 10000.0;
         break;
@@ -663,7 +663,7 @@ class _StatistiquePageState extends State<StatistiquePage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '${product['ventes']} vendus • €${product['revenu'].toStringAsFixed(2)}',
+                      '${product['ventes']} vendus • DT${product['revenu'].toStringAsFixed(2)}',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,

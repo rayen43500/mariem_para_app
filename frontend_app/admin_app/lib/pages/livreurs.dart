@@ -259,6 +259,7 @@ class _LivreursPageState extends State<LivreursPage> {
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           icon: Icon(Icons.email),
+                          hintText: 'Ex: exemple@gmail.com',
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
@@ -280,6 +281,7 @@ class _LivreursPageState extends State<LivreursPage> {
                         decoration: const InputDecoration(
                           labelText: 'Téléphone',
                           icon: Icon(Icons.phone),
+                          hintText: 'Ex: +216________',
                         ),
                         keyboardType: TextInputType.phone,
                         validator: (value) {
@@ -299,7 +301,7 @@ class _LivreursPageState extends State<LivreursPage> {
                         decoration: const InputDecoration(
                           labelText: 'Zone de livraison',
                           icon: Icon(Icons.location_on),
-                          hintText: 'Ex: Paris Centre, Lyon Est...',
+                          hintText: 'Ex: Gabes',
                         ),
                         onSaved: (value) {
                           zone = value ?? '';
@@ -310,7 +312,7 @@ class _LivreursPageState extends State<LivreursPage> {
                         decoration: const InputDecoration(
                           labelText: 'Véhicule',
                           icon: Icon(Icons.directions_bike),
-                          hintText: 'Ex: Scooter, Vélo, Voiture...',
+                          hintText: 'Ex: Voiture...',
                         ),
                         onSaved: (value) {
                           vehicule = value ?? '';

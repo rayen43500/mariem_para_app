@@ -447,7 +447,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Prix unitaire: ${produit['prix'].toStringAsFixed(2)} €',
+                                'Prix unitaire: ${produit['prix'].toStringAsFixed(2)} DT',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[700],
@@ -463,7 +463,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Sous-total: ${(produit['prix'] * produit['quantite']).toStringAsFixed(2)} €',
+                                'Sous-total: ${(produit['prix'] * produit['quantite']).toStringAsFixed(2)} DT',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -503,7 +503,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Sous-total'),
-                        Text('${_order['total']?.toStringAsFixed(2) ?? "0.00"} €'),
+                        Text('${_order['total']?.toStringAsFixed(2) ?? "0.00"} DT'),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -520,7 +520,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ),
                         Text(
-                          '${_order['total']?.toStringAsFixed(2) ?? "0.00"} €',
+                          '${_order['total']?.toStringAsFixed(2) ?? "0.00"} DT',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

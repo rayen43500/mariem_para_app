@@ -210,7 +210,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Row(
                   children: [
                     Text(
-                      '$_finalPrice €',
+                      '$_finalPrice DT',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -220,7 +220,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     if (_discount > 0) ...[
                       const SizedBox(width: 8),
                       Text(
-                        '$_originalPrice €',
+                        '$_originalPrice DT',
                         style: TextStyle(
                           fontSize: 16,
                           decoration: TextDecoration.lineThrough,

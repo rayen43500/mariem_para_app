@@ -498,7 +498,7 @@ class _PromotionsPageState extends State<PromotionsPage> {
             color: typeColor,
           ),
           label: Text(
-            '${promo.typeReduction} ${promo.typeReduction == 'pourcentage' ? '${promo.valeurReduction}%' : promo.typeReduction == 'montant' ? '${promo.valeurReduction}€' : ''}',
+            '${promo.typeReduction} ${promo.typeReduction == 'pourcentage' ? '${promo.valeurReduction}%' : promo.typeReduction == 'montant' ? '${promo.valeurReduction}DT' : ''}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
           backgroundColor: Colors.grey.shade100,

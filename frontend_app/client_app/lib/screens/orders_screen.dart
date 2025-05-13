@@ -460,7 +460,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
-                                      '${produit['quantite']} × ${produit['prix'].toStringAsFixed(2)} €',
+                                      '${produit['quantite']} × ${produit['prix'].toStringAsFixed(2)} DT',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 13,
@@ -497,7 +497,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ),
                         ),
                         Text(
-                          '${order['total']?.toStringAsFixed(2) ?? "0.00"} €',
+                          '${order['total']?.toStringAsFixed(2) ?? "0.00"} DT',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).primaryColor,

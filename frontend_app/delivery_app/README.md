@@ -18,11 +18,11 @@ samples, guidance on mobile development, and a full API reference.
 
 //////admin@test.com//////
 
-//////MotDePasse1@//////
+//////MotDePasse1@/
 
 
 livreur@l.com
 Password123!
 
 client@c.com    
-Password123
+Password123!

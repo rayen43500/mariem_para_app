@@ -109,7 +109,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '$total €',
+                    '$total DT',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -265,7 +265,7 @@ class OrderConfirmationScreen extends StatelessWidget {
             ),
           ),
           Text(
-            '${price * quantity} €',
+            '${price * quantity} DT',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),

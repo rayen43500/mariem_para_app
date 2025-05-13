@@ -291,7 +291,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
             const Divider(height: 24),
             _buildInfoRow('Client', order.clientName, Icons.person),
             _buildInfoRow('Date', formattedDate, Icons.calendar_today),
-            _buildInfoRow('Montant', '${order.montant.toStringAsFixed(2)} €', Icons.attach_money),
+            _buildInfoRow('Montant', '${order.montant.toStringAsFixed(2)} DT', Icons.attach_money),
             _buildInfoRow('Paiement', order.paiement, Icons.payment),
             _buildInfoRow('Téléphone', order.telephone, Icons.phone),
             _buildInfoRow('Adresse', order.adresse, Icons.location_on),
@@ -354,7 +354,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'x ${product.prix.toStringAsFixed(2)} €',
+                                  'x ${product.prix.toStringAsFixed(2)} DT',
                                   style: TextStyle(
                                     color: Colors.grey.shade600,
                                     fontSize: 12,
@@ -366,7 +366,7 @@ class _CommandesPageState extends State<CommandesPage> with SingleTickerProvider
                         ),
                       ),
                       Text(
-                        '${(product.prix * product.quantite).toStringAsFixed(2)} €',
+                        '${(product.prix * product.quantite).toStringAsFixed(2)} DT',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],

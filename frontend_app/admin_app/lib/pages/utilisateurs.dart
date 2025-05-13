@@ -540,7 +540,6 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                   controller: nameController,
                   decoration: const InputDecoration(
                     labelText: 'Nom complet',
-                    hintText: 'Ex: Jean Dupont',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -548,7 +547,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                   controller: emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    hintText: 'Ex: jean.dupont@example.com',
+                    hintText: 'Ex: exemple@gmail.com',
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -557,7 +556,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                   controller: phoneController,
                   decoration: const InputDecoration(
                     labelText: 'Téléphone',
-                    hintText: 'Ex: +33 6 12 34 56 78',
+                    hintText: 'Ex: +216________',
                   ),
                   keyboardType: TextInputType.phone,
                 ),
@@ -566,7 +565,7 @@ class _UtilisateursPageState extends State<UtilisateursPage> {
                   controller: addressController,
                   decoration: const InputDecoration(
                     labelText: 'Adresse',
-                    hintText: 'Ex: 15 Rue des Lilas, 75001 Paris',
+                    hintText: 'Ex: TUNIS',
                   ),
                   maxLines: 2,
                 ),

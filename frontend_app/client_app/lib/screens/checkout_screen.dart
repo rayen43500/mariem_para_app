@@ -47,8 +47,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // TODO: Charger les adresses depuis le service utilisateur
     setState(() {
       _addresses = [
-        '123 Rue Principale, 75001 Paris',
-        '456 Avenue des Fleurs, 69000 Lyon',
+        '4100 mednine sud, mednine',
       ];
       
       if (_addresses.isNotEmpty) {
@@ -339,7 +338,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 builder: (context, snapshot) {
                   final total = snapshot.data ?? 0.0;
                   return Text(
-                    '$total €',
+                    '$total DT',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,

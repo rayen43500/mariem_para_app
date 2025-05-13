@@ -1004,7 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // Prix final
         Text(
-          '${finalPrice.toStringAsFixed(2)} €',
+          '${finalPrice.toStringAsFixed(2)} DT',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -1016,7 +1016,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Prix barré si promo
         if (isOnSale)
           Text(
-            '${regularPrice.toStringAsFixed(2)} €',
+            '${regularPrice.toStringAsFixed(2)} DT',
             style: const TextStyle(
               decoration: TextDecoration.lineThrough,
               color: Color(0xFF757575),
@@ -1901,7 +1901,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             Text(
-              '${finalPrice.toStringAsFixed(2)} €',
+              '${finalPrice.toStringAsFixed(2)} DT',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1911,7 +1911,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (isOnSale) ...[
               const SizedBox(width: 8),
               Text(
-                '${price.toStringAsFixed(2)} €',
+                '${price.toStringAsFixed(2)} DT',
                 style: const TextStyle(
                   decoration: TextDecoration.lineThrough,
                   color: Color(0xFF757575),

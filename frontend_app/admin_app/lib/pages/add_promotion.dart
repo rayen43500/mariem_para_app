@@ -366,11 +366,11 @@ class _AddPromotionPageState extends State<AddPromotionPage> {
                         decoration: InputDecoration(
                           labelText: _selectedTypeReduction == 'pourcentage'
                               ? 'Pourcentage de réduction'
-                              : 'Montant de réduction (€)',
+                              : 'Montant de réduction (DT)',
                           border: const OutlineInputBorder(),
                           suffixText: _selectedTypeReduction == 'pourcentage'
                               ? '%'
-                              : '€',
+                              : 'DT',
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {

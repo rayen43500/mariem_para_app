@@ -203,8 +203,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     max: _maxPrice,
                     divisions: 20,
                     labels: RangeLabels(
-                      '${_priceRange.start.round()} €',
-                      '${_priceRange.end.round()} €',
+                      '${_priceRange.start.round()} DT',
+                      '${_priceRange.end.round()} DT',
                     ),
                     onChanged: (values) {
                       setStateModal(() {
@@ -217,8 +217,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${_priceRange.start.round()} €'),
-                        Text('${_priceRange.end.round()} €'),
+                        Text('${_priceRange.start.round()} DT'),
+                        Text('${_priceRange.end.round()} DT'),
                       ],
                     ),
                   ),
@@ -477,7 +477,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   Row(
                     children: [
                       Text(
-                        '$finalPrice €',
+                        '$finalPrice DT',
                         style: TextStyle(
                           color: hasDiscount ? Colors.red : AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,
@@ -487,7 +487,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       if (hasDiscount) ...[
                         const SizedBox(width: 4),
                         Text(
-                          '$price €',
+                          '$price DT',
                           style: TextStyle(
                             color: AppTheme.lightTextColor,
                             decoration: TextDecoration.lineThrough,

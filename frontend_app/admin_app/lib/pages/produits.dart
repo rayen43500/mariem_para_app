@@ -445,7 +445,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: '€${product.prixPromo!.toStringAsFixed(2)}',
+                                  text: 'DT${product.prixPromo!.toStringAsFixed(2)}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
@@ -456,7 +456,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                             ),
                           )
                         : Text(
-                            '€${product.prix.toStringAsFixed(2)}',
+                            'DT${product.prix.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -557,15 +557,15 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Nom du produit',
-                        hintText: 'Ex: Smartphone XYZ Pro',
+                        hintText: 'Ex: créme de change',
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: priceController,
                       decoration: const InputDecoration(
-                        labelText: 'Prix (€)',
-                        hintText: 'Ex: 599.99',
+                        labelText: 'Prix (DT)',
+                        hintText: 'Ex: 100.99',
                       ),
                       keyboardType: TextInputType.number,
                     ),
@@ -583,7 +583,7 @@ class _ProduitsPageState extends State<ProduitsPage> {
                       controller: descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Description',
-                        hintText: 'Ex: Un smartphone de dernière génération...',
+                        hintText: 'Ex: Eau de parfum pour bébé...',
                       ),
                       maxLines: 3,
                     ),

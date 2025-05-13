@@ -240,7 +240,7 @@ class _CartScreenState extends State<CartScreen> {
                             Row(
                               children: [
                                 Text(
-                                  '$prixFinal €',
+                                  '$prixFinal DT',
                                   style: TextStyle(
                                     color: discount > 0 ? Colors.red : AppTheme.primaryColor,
                                     fontWeight: FontWeight.bold,
@@ -249,7 +249,7 @@ class _CartScreenState extends State<CartScreen> {
                                 if (discount > 0) ...[
                                   const SizedBox(width: 4),
                                   Text(
-                                    '$prix €',
+                                    '$prix DT',
                                     style: TextStyle(
                                       decoration: TextDecoration.lineThrough,
                                       color: AppTheme.lightTextColor,
@@ -401,7 +401,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ),
                   Text(
-                    '$totalOriginal €',
+                    '$totalOriginal DT',
                     style: TextStyle(
                       color: AppTheme.lightTextColor,
                       decoration: TextDecoration.lineThrough,
@@ -421,7 +421,7 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               ),
               Text(
-                '$total €',
+                '$total DT',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
