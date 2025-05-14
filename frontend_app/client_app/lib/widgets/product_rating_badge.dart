@@ -56,16 +56,15 @@ class _ProductRatingBadgeState extends State<ProductRatingBadge> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const SizedBox.shrink();
-    }
-    
-    if (_reviewCount == 0) {
-      return const Text(
-        'Aucun avis',
-        style: TextStyle(
-          fontSize: 12,
-          color: Colors.grey,
-          fontStyle: FontStyle.italic,
+      return const SizedBox(
+        height: 16,
+        width: 80,
+        child: Center(
+          child: LinearProgressIndicator(
+            backgroundColor: Colors.amber,
+            color: Colors.amberAccent,
+            minHeight: 2,
+          ),
         ),
       );
     }
@@ -77,15 +76,16 @@ class _ProductRatingBadgeState extends State<ProductRatingBadge> {
         StarRating(
           rating: _rating,
           size: widget.size,
-          showRatingValue: true,
+          showRatingValue: _reviewCount > 0,
         ),
         if (widget.showCount) ...[
           const SizedBox(width: 4),
           Text(
-            '($_reviewCount)',
+            _reviewCount > 0 ? '($_reviewCount)' : 'Aucun avis',
             style: TextStyle(
               fontSize: widget.size * 0.7,
               color: Colors.grey[600],
+              fontStyle: _reviewCount > 0 ? FontStyle.normal : FontStyle.italic,
             ),
           ),
         ],

@@ -422,14 +422,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: TextButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: () {
                       _tabController.animateTo(1); // Basculer vers l'onglet des avis
                     },
-                    icon: const Icon(Icons.star),
-                    label: const Text('Voir les avis clients'),
-                    style: TextButton.styleFrom(
+                    icon: const Icon(Icons.star, color: Colors.amber),
+                    label: const Text('Voir ou ajouter un avis'),
+                    style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.amber.shade800,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: Colors.amber.shade300),
                     ),
                   ),
                 ),

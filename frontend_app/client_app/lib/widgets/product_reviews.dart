@@ -248,11 +248,11 @@ class _ProductReviewsState extends State<ProductReviews> {
             _showAddReviewForm = true;
           });
         },
-        icon: const Icon(Icons.rate_review),
+        icon: const Icon(Icons.star, color: Colors.white),
         label: const Text('Donnez votre avis sur ce produit'),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          backgroundColor: theme.AppTheme.accentColor,
+          backgroundColor: Colors.amber.shade600,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -349,27 +349,45 @@ class _ProductReviewsState extends State<ProductReviews> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (index) {
-              return IconButton(
-                icon: Icon(
-                  index < _newRating ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
-                  size: 40,
-                ),
-                onPressed: () {
+              return GestureDetector(
+                onTap: () {
                   setState(() {
-                    _newRating = index + 1;
+                    _newRating = index + 1.0;
                   });
                 },
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                // Permettre de sélectionner en glissant le doigt
+                onHorizontalDragUpdate: (details) {
+                  final RenderBox box = context.findRenderObject() as RenderBox;
+                  final localPosition = box.globalToLocal(details.globalPosition);
+                  final starWidth = box.size.width / 5;
+                  final starIndex = (localPosition.dx / starWidth).floor();
+                  
+                  if (starIndex >= 0 && starIndex < 5) {
+                    setState(() {
+                      _newRating = starIndex + 1.0;
+                    });
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(
+                    index < _newRating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 40,
+                  ),
+                ),
               );
             }),
           ),
+          const SizedBox(height: 8),
           Text(
-            _newRating > 0 ? '$_newRating / 5' : 'Sélectionnez une note',
-            style: const TextStyle(
-              fontSize: 14,
+            _newRating > 0 
+              ? 'Votre note: ${_newRating.toStringAsFixed(0)}/5' 
+              : 'Sélectionnez une note',
+            style: TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.amber,
+              color: Colors.amber.shade800,
             ),
             textAlign: TextAlign.center,
           ),

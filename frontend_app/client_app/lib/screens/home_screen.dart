@@ -14,6 +14,7 @@ import 'orders_screen.dart';
 import 'chat_screen.dart';
 import '../theme/app_theme.dart' as theme;
 import 'profile_screen.dart';
+import '../services/local_review_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -862,7 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ProductRatingBadge(
                                   productId: product['_id'],
                                   size: 14,
-                                  showCount: false,
+                                  showCount: true,
                                 ),
                                 const SizedBox(height: 4),
                                 _buildPriceSection(product),
@@ -884,34 +885,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                // Bouton Voir détails
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: TextButton(
-                                    onPressed: () => _showProductDetails(product),
-                                    child: const Text('Détails'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppTheme.primaryColor,
-                                      padding: const EdgeInsets.symmetric(vertical: 4),
-                                      visualDensity: VisualDensity.compact,
-                                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                // Boutons Détails et Avis clients côte à côte
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextButton(
+                                        onPressed: () => _showProductDetails(product),
+                                        child: const Text('Détails'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppTheme.primaryColor,
+                                          padding: const EdgeInsets.symmetric(vertical: 4),
+                                          visualDensity: VisualDensity.compact,
+                                          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                // Bouton Avis clients
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: TextButton.icon(
-                                    onPressed: () => _navigateToProductReviews(product),
-                                    icon: const Icon(Icons.rate_review, size: 14),
-                                    label: const Text('Avis clients'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.amber.shade800,
-                                      padding: const EdgeInsets.symmetric(vertical: 4),
-                                      visualDensity: VisualDensity.compact,
-                                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    Expanded(
+                                      child: TextButton.icon(
+                                        onPressed: () => _navigateToProductReviews(product),
+                                        icon: const Icon(Icons.star, size: 14, color: Colors.amber),
+                                        label: const Text('Avis'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.amber.shade800,
+                                          padding: const EdgeInsets.symmetric(vertical: 4),
+                                          visualDensity: VisualDensity.compact,
+                                          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1135,14 +1137,260 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Navigation vers le détail d'un produit avec l'onglet avis sélectionné
   void _navigateToProductReviews(Map<String, dynamic> product) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailScreen(
-          productId: product['_id'],
-          initialTabIndex: 1, // Index de l'onglet des avis
-        ),
-      ),
+    _showReviewDialog(product);
+  }
+
+  // Fonction pour afficher le dialogue d'avis
+  void _showReviewDialog(Map<String, dynamic> product) {
+    final TextEditingController commentController = TextEditingController();
+    final TextEditingController nameController = TextEditingController();
+    double newRating = 0;
+    bool isSubmitting = false;
+    final LocalReviewService reviewService = LocalReviewService();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Votre avis sur ${product['nom']}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      
+                      // Champ du nom
+                      const Text(
+                        'Votre nom:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: 'Entrez votre nom',
+                          prefixIcon: const Icon(Icons.person),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Note
+                      const Text(
+                        'Votre note:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Sélection des étoiles
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(5, (index) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                newRating = index + 1.0;
+                              });
+                            },
+                            // Permettre de sélectionner en glissant le doigt
+                            onHorizontalDragUpdate: (details) {
+                              final RenderBox box = context.findRenderObject() as RenderBox;
+                              final localPosition = box.globalToLocal(details.globalPosition);
+                              final starWidth = box.size.width / 5;
+                              final starIndex = (localPosition.dx / starWidth).floor();
+                              
+                              if (starIndex >= 0 && starIndex < 5) {
+                                setState(() {
+                                  newRating = starIndex + 1.0;
+                                });
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Icon(
+                                index < newRating ? Icons.star : Icons.star_border,
+                                color: Colors.amber,
+                                size: 36,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          newRating > 0 
+                            ? 'Votre note: ${newRating.toStringAsFixed(0)}/5' 
+                            : 'Sélectionnez une note',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade800,
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Commentaire
+                      const Text(
+                        'Votre commentaire:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: commentController,
+                        decoration: InputDecoration(
+                          hintText: 'Partagez votre expérience...',
+                          prefixIcon: const Icon(Icons.comment),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                        ),
+                        maxLines: 3,
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Boutons d'action
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Annuler'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting ? null : () async {
+                                if (newRating == 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Veuillez attribuer une note')),
+                                  );
+                                  return;
+                                }
+                                
+                                if (nameController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Veuillez saisir votre nom')),
+                                  );
+                                  return;
+                                }
+                                
+                                setState(() {
+                                  isSubmitting = true;
+                                });
+
+                                try {
+                                  await reviewService.addReview(
+                                    productId: product['_id'],
+                                    userName: nameController.text,
+                                    rating: newRating,
+                                    comment: commentController.text,
+                                  );
+                                  
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Merci ! Votre avis a été ajouté avec succès'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    setState(() {
+                                      isSubmitting = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Erreur: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: Colors.amber.shade600,
+                              ),
+                              child: isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text('Publier'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+        );
+      },
     );
   }
 
