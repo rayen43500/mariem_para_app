@@ -28,6 +28,12 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = true;
       
+      // Nettoyer les données utilisateur potentiellement corrompues
+      final cleaned = await _authService.cleanupUserData();
+      if (cleaned) {
+        print('📝 Données utilisateur nettoyées');
+      }
+      
       // Obtenir le token via le service d'auth qui vérifie aussi sa validité
       final validToken = await _authService.getToken();
       final userStr = await _storage.read(key: 'user');
@@ -68,6 +74,29 @@ class AuthProvider with ChangeNotifier {
     }
     
     if (!_isAuthenticated) {
+      // Vérifier d'abord la connectivité au serveur
+      final isServerReachable = await _authService.checkServerConnectivity();
+      if (!isServerReachable) {
+        print('📡 Serveur inaccessible, utilisation des données locales si disponibles');
+        // Essayer de récupérer les informations utilisateur locales
+        final userStr = await _storage.read(key: 'user');
+        final token = await _storage.read(key: 'token');
+        
+        if (userStr != null && token != null) {
+          try {
+            _user = json.decode(userStr);
+            _token = token;
+            _isAuthenticated = true;
+            notifyListeners();
+            print('🔄 Authentification basée sur les données locales');
+            return true;
+          } catch (e) {
+            print('❌ Erreur lors de la récupération des données locales: $e');
+          }
+        }
+        return false;
+      }
+      
       // Tenter une vérification du token
       return await _loadAuthState().then((_) => _isAuthenticated);
     }

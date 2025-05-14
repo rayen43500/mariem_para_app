@@ -235,7 +235,7 @@ exports.refreshToken = async (req, res) => {
     console.error(error);
     res.status(401).json({ message: 'Refresh token invalide' });
   }
-};
+}; 
 
 // Changement de mot de passe
 exports.changePassword = async (req, res) => {

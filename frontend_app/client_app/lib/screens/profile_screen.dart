@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart' as theme;
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -42,6 +43,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadUserData();
+    
+    // Vérifier la connectivité au serveur
+    _checkServerConnectivity();
   }
   
   @override
@@ -63,27 +67,143 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     });
 
     try {
+      // Vérifier si nous sommes en mode hors ligne
+      final isOffline = await _authService.isOfflineMode();
+      if (isOffline) {
+        print('Application en mode hors ligne');
+        await _authService.updateUserMode('hors_ligne');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Mode hors ligne activé - Les modifications seront sauvegardées localement'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Détails',
+                onPressed: () {
+                  _showApiConfigDialog();
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        print('Application en mode connecté');
+        await _authService.updateUserMode('connecté');
+      }
+      
       final userData = await _authService.getCurrentUser();
       
+      if (userData == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de récupérer vos informations. Utilisation du mode hors ligne.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          
+          // Créer un profil utilisateur minimal au lieu de rediriger vers la connexion
+          final offlineData = {
+            '_id': 'offline_user',
+            'nom': 'Utilisateur',
+            'email': 'utilisateur@example.com',
+            'telephone': '',
+            'adresse': '',
+            'mode': 'hors_ligne'
+          };
+          
+          setState(() {
+            _userData = offlineData;
+            _isLoading = false;
+          });
+          
+          // Initialiser les contrôleurs avec les données minimales
+          _nameController.text = 'Utilisateur';
+          _emailController.text = 'utilisateur@example.com';
+          _phoneController.text = '';
+          _addressController.text = '';
+          
+          return;
+        }
+      } else {
+        // Vérifier spécifiquement si l'ID utilisateur est disponible
+        if (userData['_id'] == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Données utilisateur incomplètes. Mode hors ligne activé.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            
+            // Créer un profil utilisateur minimal avec les données disponibles
+            final minimalUserData = {
+              '_id': 'offline_user',
+              'nom': userData['nom'] ?? 'Utilisateur',
+              'email': userData['email'] ?? 'utilisateur@example.com',
+              'telephone': userData['telephone'] ?? '',
+              'adresse': userData['adresse'] ?? '',
+              'mode': 'hors_ligne'
+            };
+            
+            setState(() {
+              _userData = minimalUserData;
+              _isLoading = false;
+            });
+            
+            // Initialiser les contrôleurs avec les données disponibles
+            _nameController.text = (minimalUserData['nom'] ?? '').toString();
+            _emailController.text = (minimalUserData['email'] ?? '').toString();
+            _phoneController.text = (minimalUserData['telephone'] ?? '').toString();
+            _addressController.text = (minimalUserData['adresse'] ?? '').toString();
+            
+            return;
+          }
+        } else {
+          setState(() {
+            _userData = userData;
+            _isLoading = false;
+          });
+          
+          // Initialiser les contrôleurs avec les données utilisateur
+          _nameController.text = (userData['nom'] ?? '').toString();
+          _emailController.text = (userData['email'] ?? '').toString();
+          _phoneController.text = (userData['telephone'] ?? '').toString();
+          _addressController.text = (userData['adresse'] ?? '').toString();
+        }
+      }
+    } catch (e) {
+      print('Erreur lors du chargement du profil: $e');
+      
+      // Créer un profil utilisateur minimal en cas d'erreur
+      final offlineUserData = {
+        '_id': 'offline_user',
+        'nom': 'Utilisateur (hors ligne)',
+        'email': 'utilisateur@example.com',
+        'telephone': '',
+        'adresse': '',
+        'mode': 'erreur'
+      };
+      
       setState(() {
-        _userData = userData;
+        _userData = offlineUserData;
         _isLoading = false;
       });
       
-      // Initialiser les contrôleurs avec les données utilisateur
-      if (userData != null) {
-        _nameController.text = userData['nom'] ?? '';
-        _emailController.text = userData['email'] ?? '';
-        _phoneController.text = userData['telephone'] ?? '';
-        _addressController.text = userData['adresse'] ?? '';
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      // Initialiser les contrôleurs avec les données minimales
+      _nameController.text = 'Utilisateur (hors ligne)';
+      _emailController.text = 'utilisateur@example.com';
+      _phoneController.text = '';
+      _addressController.text = '';
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du chargement du profil: $e')),
+          SnackBar(
+            content: Text('Mode hors ligne activé suite à une erreur: ${e.toString().split(':').first}'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     }
@@ -101,7 +221,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     try {
       final userId = _userData?['_id'];
       if (userId == null) {
-        throw Exception('ID utilisateur non disponible');
+        // Au lieu de lever une exception, afficher un message et essayer de récupérer les informations utilisateur
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ID utilisateur non disponible. Tentative de récupération des informations...'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        
+        // Tenter de recharger les données utilisateur
+        await _loadUserData();
+        
+        // Vérifier à nouveau si l'ID est disponible
+        if (_userData?['_id'] == null) {
+          throw Exception('Impossible de récupérer l\'ID utilisateur. Veuillez vous reconnecter.');
+        }
       }
       
       final userData = {
@@ -110,7 +246,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         'adresse': _addressController.text,
       };
       
-      final updatedUser = await _authService.updateUserProfile(userId, userData);
+      // Vérifier si nous sommes en mode hors ligne
+      if (_userData?['mode'] == 'hors_ligne' || _userData?['mode'] == 'anonyme' || _userData?['mode'] == 'erreur') {
+        // En mode hors ligne, mettre à jour uniquement les données locales
+        final updatedUserData = await _authService.updateUserDataLocally(userData);
+        
+        setState(() {
+          _userData = updatedUserData;
+          _isLoading = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil mis à jour localement (mode hors ligne)'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Mode en ligne - essayer de mettre à jour via l'API
+      final updatedUser = await _authService.updateUserProfile(_userData!['_id'], userData);
       
       setState(() {
         _userData = updatedUser;
@@ -129,13 +287,38 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       setState(() {
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la mise à jour du profil: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      
+      // En cas d'erreur, essayer de mettre à jour localement
+      try {
+        final userData = {
+          'nom': _nameController.text,
+          'telephone': _phoneController.text,
+          'adresse': _addressController.text,
+        };
+        
+        final updatedUserData = await _authService.updateUserDataLocally(userData);
+        
+        setState(() {
+          _userData = updatedUserData;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profil mis à jour localement (erreur de connexion: ${e.toString().split(':').first})'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (localError) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur lors de la mise à jour du profil: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -163,11 +346,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     try {
       final userId = _userData?['_id'];
       if (userId == null) {
-        throw Exception('ID utilisateur non disponible');
+        // Au lieu de lever une exception, afficher un message et essayer de récupérer les informations utilisateur
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('ID utilisateur non disponible. Tentative de récupération des informations...'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        
+        // Tenter de recharger les données utilisateur
+        await _loadUserData();
+        
+        // Vérifier à nouveau si l'ID est disponible
+        if (_userData?['_id'] == null) {
+          throw Exception('Impossible de récupérer l\'ID utilisateur. Veuillez vous reconnecter.');
+        }
       }
       
       final success = await _authService.changePassword(
-        userId,
+        _userData!['_id'],
         _currentPasswordController.text,
         _newPasswordController.text,
       );
@@ -228,6 +427,114 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
+  Future<void> _checkServerConnectivity() async {
+    final isConnected = await _authService.checkServerConnectivity();
+    if (!isConnected && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de se connecter au serveur. Mode hors ligne activé.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Détails',
+            onPressed: () {
+              _showApiConfigDialog();
+            },
+          ),
+        ),
+      );
+    }
+  }
+  
+  void _showApiConfigDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Configuration de l\'API'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('URL actuelle: ${_authService.baseUrl}'),
+            SizedBox(height: 10),
+            Text('Si vous avez des problèmes de connexion:'),
+            SizedBox(height: 5),
+            Text('1. Vérifiez que le serveur est en cours d\'exécution'),
+            Text('2. Vérifiez que l\'URL est correcte'),
+            Text('3. Vérifiez votre connexion internet'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Méthode pour tenter de se reconnecter au serveur
+  Future<void> _attemptReconnection() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Vérifier la connectivité au serveur
+      final isConnected = await _authService.checkServerConnectivity();
+      
+      if (isConnected) {
+        // Mettre à jour le mode
+        await _authService.updateUserMode('connecté');
+        
+        // Recharger les données utilisateur
+        await _loadUserData();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Connexion au serveur établie avec succès'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Impossible de se connecter au serveur'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Détails',
+                onPressed: () {
+                  _showApiConfigDialog();
+                },
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la tentative de reconnexion: ${e.toString().split(':').first}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -256,40 +563,102 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
   
   Widget _buildProfileTab() {
+    final bool isOfflineMode = _userData?['mode'] == 'hors_ligne' || 
+                              _userData?['mode'] == 'anonyme' || 
+                              _userData?['mode'] == 'erreur';
+    
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
           // En-tête du profil avec avatar
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: theme.AppTheme.primaryColor,
-                  child: Text(
-                    (_userData?['nom'] ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 40,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                  Center(
+                    child: Column(
+                      children: [
+                Stack(
+                  children: [
+                    CircleAvatar(
+                          radius: 50,
+                      backgroundColor: theme.AppTheme.primaryColor,
+                      child: Text(
+                        (_userData?['nom'] ?? 'U')[0].toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 40,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (isOfflineMode)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Icon(
+                            Icons.cloud_off,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                  ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _userData?['nom'] ?? 'Utilisateur',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        Text(
+                          _userData?['email'] ?? '',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                if (isOfflineMode)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.orange),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.cloud_off, size: 16, color: Colors.orange),
+                              SizedBox(width: 8),
+                        Text(
+                                'Mode hors ligne',
+                                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _isLoading ? null : _attemptReconnection,
+                          icon: Icon(Icons.refresh, size: 16),
+                          label: Text('Tenter de se reconnecter'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _userData?['nom'] ?? 'Utilisateur',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                Text(
-                  _userData?['email'] ?? '',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
+                  const SizedBox(height: 32),
           
           // Formulaire d'édition du profil
           Card(
@@ -304,12 +673,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Informations personnelles',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        const Text(
+                          'Informations personnelles',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        if (isOfflineMode)
+                          Tooltip(
+                            message: 'Les modifications seront sauvegardées localement',
+                            child: Icon(Icons.info_outline, color: Colors.orange),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -393,25 +772,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             child: Column(
               children: [
-                ListTile(
+                  ListTile(
                   leading: const Icon(Icons.shopping_bag, color: theme.AppTheme.primaryColor),
-                  title: const Text('Mes commandes'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
+                    title: const Text('Mes commandes'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
                     Navigator.pushNamed(context, '/orders');
-                  },
-                ),
+                    },
+                  ),
                 const Divider(height: 1),
-                ListTile(
+                  ListTile(
                   leading: const Icon(Icons.location_on, color: theme.AppTheme.primaryColor),
                   title: const Text('Mes adresses de livraison'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Fonctionnalité à venir')),
-                    );
-                  },
-                ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fonctionnalité à venir')),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -482,8 +861,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             setState(() {
                               _obscureCurrentPassword = !_obscureCurrentPassword;
                             });
-                          },
-                        ),
+                    },
+                  ),
                         border: const OutlineInputBorder(),
                       ),
                       obscureText: _obscureCurrentPassword,
@@ -537,8 +916,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             setState(() {
                               _obscureConfirmPassword = !_obscureConfirmPassword;
                             });
-                          },
-                        ),
+                    },
+                  ),
                         border: const OutlineInputBorder(),
                       ),
                       obscureText: _obscureConfirmPassword,
@@ -552,24 +931,24 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         return null;
                       },
                     ),
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                    child: ElevatedButton(
                         onPressed: _isLoading ? null : _changePassword,
-                        style: ElevatedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: theme.AppTheme.primaryColor,
-                        ),
-                        child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
+                      ),
+                      child: _isLoading 
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                           : const Text('Mettre à jour le mot de passe'),
                       ),
                     ),
@@ -610,7 +989,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     icon: Icons.refresh,
                     title: 'Changement régulier',
                     description: 'Changez votre mot de passe périodiquement pour plus de sécurité',
-                  ),
+                          ),
                   const SizedBox(height: 12),
                   _buildSecurityTip(
                     icon: Icons.devices,
