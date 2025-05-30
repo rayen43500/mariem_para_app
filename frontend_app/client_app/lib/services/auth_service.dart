@@ -559,6 +559,32 @@ class AuthService {
         throw Exception('Utilisateur non authentifié - token manquant');
       }
       
+      // Extraire l'ID utilisateur du token JWT pour s'assurer qu'ils correspondent
+      String? tokenUserId;
+      try {
+        final parts = token.split('.');
+        String normalizedPart = parts[1];
+        while (normalizedPart.length % 4 != 0) {
+          normalizedPart += '=';
+        }
+        
+        final decoded = base64Url.decode(normalizedPart);
+        final payloadJson = utf8.decode(decoded);
+        final payload = json.decode(payloadJson);
+        
+        tokenUserId = payload['userId'];
+        print('ID utilisateur extrait du token: $tokenUserId');
+        
+        // Si l'ID extrait du token est différent de celui passé, utiliser celui du token
+        if (tokenUserId != null && tokenUserId != userId) {
+          print('L\'ID utilisateur dans le token ($tokenUserId) diffère de l\'ID fourni ($userId). Utilisation de l\'ID du token.');
+          userId = tokenUserId;
+        }
+      } catch (e) {
+        print('Erreur lors de l\'extraction de l\'ID utilisateur du token: $e');
+        // Continuer avec l'ID fourni si l'extraction échoue
+      }
+      
       // Afficher l'URL complète pour le débogage
       final url = '$baseUrl/auth/change-password';
       print('URL de la requête: $url');
@@ -568,6 +594,8 @@ class AuthService {
         'currentPassword': currentPassword,
         'newPassword': newPassword,
       };
+      
+      print('Payload de la requête: ${json.encode(payload)}');
       
       final response = await http.post(
         Uri.parse(url),

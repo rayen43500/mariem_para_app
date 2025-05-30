@@ -167,6 +167,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             _isLoading = false;
           });
           
+          // S'assurer que l'ID utilisateur est correctement stocké
+          // Il peut être sous la forme 'id' ou '_id' selon la réponse de l'API
+          if (_userData!['_id'] == null && _userData!['id'] != null) {
+            _userData!['_id'] = _userData!['id'];
+            print('ID utilisateur récupéré depuis le champ "id": ${_userData!["_id"]}');
+          }
+          
           // Initialiser les contrôleurs avec les données utilisateur
           _nameController.text = (userData['nom'] ?? '').toString();
           _emailController.text = (userData['email'] ?? '').toString();
@@ -344,7 +351,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     });
     
     try {
-      final userId = _userData?['_id'];
+      // Récupérer l'ID utilisateur, en vérifiant d'abord _id puis id
+      String? userId = _userData?['_id'] ?? _userData?['id'];
+      
       if (userId == null) {
         // Au lieu de lever une exception, afficher un message et essayer de récupérer les informations utilisateur
         if (mounted) {
@@ -360,13 +369,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         await _loadUserData();
         
         // Vérifier à nouveau si l'ID est disponible
-        if (_userData?['_id'] == null) {
+        userId = _userData?['_id'] ?? _userData?['id'];
+        
+        if (userId == null) {
           throw Exception('Impossible de récupérer l\'ID utilisateur. Veuillez vous reconnecter.');
         }
       }
       
+      print('Tentative de changement de mot de passe pour l\'utilisateur avec ID: $userId');
+      
       final success = await _authService.changePassword(
-        _userData!['_id'],
+        userId,
         _currentPasswordController.text,
         _newPasswordController.text,
       );
@@ -403,6 +416,19 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           errorMessage = 'Le nouveau mot de passe ne respecte pas les critères de sécurité';
         } else if (errorString.contains('connexion') || errorString.contains('réseau')) {
           errorMessage = 'Problème de connexion au serveur. Vérifiez votre connexion internet';
+        } else if (errorString.contains('autorisé')) {
+          errorMessage = 'Problème d\'autorisation. Veuillez vous reconnecter';
+          
+          // En cas d'erreur d'autorisation, essayer de se reconnecter
+          try {
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            await authProvider.refreshSession();
+            
+            // Informer l'utilisateur de réessayer
+            errorMessage += '. Veuillez réessayer maintenant.';
+          } catch (refreshError) {
+            print('Erreur lors du rafraîchissement de la session: $refreshError');
+          }
         }
         
         ScaffoldMessenger.of(context).showSnackBar(

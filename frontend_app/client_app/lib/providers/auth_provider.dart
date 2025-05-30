@@ -176,4 +176,38 @@ class AuthProvider with ChangeNotifier {
       rethrow;
     }
   }
+  
+  // Actualiser la session utilisateur en rafraîchissant le token et en rechargeant les données
+  Future<bool> refreshSession() async {
+    try {
+      // Essayer d'abord de rafraîchir le token
+      try {
+        await refreshToken();
+      } catch (e) {
+        print('Erreur lors du rafraîchissement du token: $e');
+        // Continuer même si le rafraîchissement du token échoue
+      }
+      
+      // Recharger les données utilisateur
+      final userData = await _authService.getCurrentUser();
+      if (userData != null) {
+        _user = userData;
+        
+        // S'assurer que l'ID est disponible sous la forme correcte
+        if (_user!['_id'] == null && _user!['id'] != null) {
+          _user!['_id'] = _user!['id'];
+        }
+        
+        await _storage.write(key: 'user', value: json.encode(_user));
+        _isAuthenticated = true;
+        notifyListeners();
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      print('Erreur lors de l\'actualisation de la session: $e');
+      return false;
+    }
+  }
 } 
