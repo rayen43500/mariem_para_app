@@ -854,7 +854,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Pour protéger votre compte, utilisez un mot de passe fort et unique avec au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&).',
+                      'Pour protéger votre compte, utilisez un mot de passe fort et unique avec au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@\$!%*?&).',
                       style: TextStyle(
                         color: Colors.grey,
                       ),
