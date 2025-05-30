@@ -376,7 +376,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         }
       }
       
+      print('Données utilisateur: $_userData');
       print('Tentative de changement de mot de passe pour l\'utilisateur avec ID: $userId');
+      
+      // Vérifier si le token est présent et valide avant de changer le mot de passe
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      if (token == null || token.isEmpty) {
+        print('Token manquant, tentative de rafraîchissement de la session...');
+        await authProvider.refreshSession();
+      }
       
       final success = await _authService.changePassword(
         userId,
@@ -410,6 +419,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         
         // Analyser le message d'erreur pour fournir une information plus claire
         String errorString = e.toString().toLowerCase();
+        print('Message d\'erreur complet: $e');
+        
         if (errorString.contains('mot de passe actuel incorrect')) {
           errorMessage = 'Le mot de passe actuel est incorrect';
         } else if (errorString.contains('format')) {
@@ -417,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         } else if (errorString.contains('connexion') || errorString.contains('réseau')) {
           errorMessage = 'Problème de connexion au serveur. Vérifiez votre connexion internet';
         } else if (errorString.contains('autorisé')) {
-          errorMessage = 'Problème d\'autorisation. Veuillez vous reconnecter';
+          errorMessage = 'Problème d\'autorisation. Tentative de reconnexion...';
           
           // En cas d'erreur d'autorisation, essayer de se reconnecter
           try {
@@ -425,9 +436,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             await authProvider.refreshSession();
             
             // Informer l'utilisateur de réessayer
-            errorMessage += '. Veuillez réessayer maintenant.';
+            errorMessage += ' Veuillez réessayer maintenant.';
           } catch (refreshError) {
             print('Erreur lors du rafraîchissement de la session: $refreshError');
+            errorMessage += ' Échec. Veuillez vous reconnecter.';
           }
         }
         
@@ -435,6 +447,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           SnackBar(
             content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {},
+            ),
           ),
         );
       }

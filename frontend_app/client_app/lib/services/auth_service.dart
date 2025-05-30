@@ -234,36 +234,11 @@ class AuthService {
         return null;
       }
       
-      // Afficher l'URL complète pour le débogage
-      final url = '$baseUrl/users/$userId';
+      // Utiliser la route /users/me au lieu de /users/:userId
+      final url = '$baseUrl/users/me';
       print('URL de la requête: $url');
       
-      // Vérifier d'abord si l'utilisateur existe avec une requête HEAD
-      try {
-        final checkResponse = await http.head(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ).timeout(Duration(milliseconds: 5000));
-        
-        if (checkResponse.statusCode == 404) {
-          print('Utilisateur non trouvé (vérification préliminaire). Utilisation des données locales.');
-          final userStr = await _storage.read(key: 'user');
-          if (userStr != null) {
-            try {
-              return json.decode(userStr);
-            } catch (e) {
-              print('Erreur lors du décodage des données utilisateur locales: $e');
-            }
-          }
-          return {'_id': userId, 'nom': 'Utilisateur', 'email': 'utilisateur@example.com'};
-        }
-      } catch (e) {
-        print('Erreur lors de la vérification préliminaire: $e');
-        // Continuer avec la requête GET même si la vérification HEAD échoue
-      }
-      
+      // Ne pas utiliser de requête HEAD préliminaire car la route me n'accepte pas HEAD
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -572,6 +547,8 @@ class AuthService {
         final payloadJson = utf8.decode(decoded);
         final payload = json.decode(payloadJson);
         
+        print('Token décodé: $payload');
+        
         tokenUserId = payload['userId'];
         print('ID utilisateur extrait du token: $tokenUserId');
         
@@ -597,6 +574,7 @@ class AuthService {
       
       print('Payload de la requête: ${json.encode(payload)}');
       
+      // Vérifier que le token est bien transmis avec le préfixe Bearer
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -607,6 +585,7 @@ class AuthService {
       );
       
       print('Statut de la réponse API (changement mot de passe): ${response.statusCode}');
+      print('Corps de la réponse: ${response.body}');
       
       if (response.statusCode == 200) {
         print('Mot de passe modifié avec succès');
@@ -629,6 +608,47 @@ class AuthService {
           errorMessage = error['message'] ?? errorMessage;
         } catch (e) {
           // Ignorer les erreurs de parsing
+        }
+        throw Exception(errorMessage);
+      } else if (response.statusCode == 403) {
+        print('Erreur d\'autorisation (403) - Vous n\'êtes pas autorisé à modifier ce mot de passe');
+        String errorMessage = 'Vous n\'êtes pas autorisé à modifier ce mot de passe';
+        try {
+          final error = json.decode(response.body);
+          errorMessage = error['message'] ?? errorMessage;
+          print('Message d\'erreur 403: $errorMessage');
+          
+          // Essayer de déterminer la cause précise
+          if (errorMessage.contains('n\'êtes pas autorisé')) {
+            print('Problème de correspondance d\'ID utilisateur - le token et l\'ID utilisateur ne correspondent pas');
+            // Essayons d'extraire à nouveau l'ID utilisateur du token et réessayer
+            try {
+              final parts = token.split('.');
+              String normalizedPart = parts[1];
+              while (normalizedPart.length % 4 != 0) {
+                normalizedPart += '=';
+              }
+              
+              final decoded = base64Url.decode(normalizedPart);
+              final payloadJson = utf8.decode(decoded);
+              final payload = json.decode(payloadJson);
+              
+              tokenUserId = payload['userId'];
+              print('ID utilisateur ré-extrait du token: $tokenUserId');
+              
+              // Si nous avons un nouvel ID utilisateur du token, essayer à nouveau avec celui-ci
+              if (tokenUserId != null && tokenUserId != userId) {
+                print('Tentative de réessayer avec l\'ID du token: $tokenUserId');
+                // Note: nous ne faisons pas une récursion ici pour éviter les boucles infinies
+                // Le code appelant devra gérer cette erreur et décider s'il faut réessayer
+              }
+            } catch (e) {
+              print('Erreur lors de la ré-extraction de l\'ID utilisateur du token: $e');
+            }
+          }
+        } catch (e) {
+          // Ignorer les erreurs de parsing
+          print('Erreur lors du parsing de l\'erreur 403: $e');
         }
         throw Exception(errorMessage);
       } else {
