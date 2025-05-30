@@ -583,6 +583,16 @@ class AuthService {
       if (response.statusCode == 200) {
         print('Mot de passe modifié avec succès');
         return true;
+      } else if (response.statusCode == 400) {
+        print('Erreur de validation (400) - Format de mot de passe incorrect ou mot de passe actuel invalide');
+        String errorMessage = 'Format de mot de passe incorrect ou mot de passe actuel invalide';
+        try {
+          final error = json.decode(response.body);
+          errorMessage = error['message'] ?? errorMessage;
+        } catch (e) {
+          // Ignorer les erreurs de parsing
+        }
+        throw Exception(errorMessage);
       } else if (response.statusCode == 401) {
         print('Erreur d\'authentification (401) - Mot de passe actuel incorrect ou session expirée');
         String errorMessage = 'Session expirée ou mot de passe actuel incorrect';

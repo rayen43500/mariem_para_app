@@ -393,9 +393,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         _isLoading = false;
       });
       if (mounted) {
+        String errorMessage = 'Erreur lors du changement de mot de passe';
+        
+        // Analyser le message d'erreur pour fournir une information plus claire
+        String errorString = e.toString().toLowerCase();
+        if (errorString.contains('mot de passe actuel incorrect')) {
+          errorMessage = 'Le mot de passe actuel est incorrect';
+        } else if (errorString.contains('format')) {
+          errorMessage = 'Le nouveau mot de passe ne respecte pas les critères de sécurité';
+        } else if (errorString.contains('connexion') || errorString.contains('réseau')) {
+          errorMessage = 'Problème de connexion au serveur. Vérifiez votre connexion internet';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
           ),
         );
@@ -842,7 +854,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Pour protéger votre compte, utilisez un mot de passe fort et unique',
+                      'Pour protéger votre compte, utilisez un mot de passe fort et unique avec au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&).',
                       style: TextStyle(
                         color: Colors.grey,
                       ),
@@ -896,8 +908,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer un nouveau mot de passe';
                         }
-                        if (value.length < 6) {
-                          return 'Le mot de passe doit contenir au moins 6 caractères';
+                        if (value.length < 8) {
+                          return 'Le mot de passe doit contenir au moins 8 caractères';
+                        }
+                        // Regex pour vérifier la présence d'une majuscule, minuscule, chiffre et caractère spécial
+                        final RegExp passwordRegex = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$');
+                        if (!passwordRegex.hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial';
                         }
                         return null;
                       },
